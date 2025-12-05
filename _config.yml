@@ -16,7 +16,7 @@ timezone: Asia/Seoul
 
 title: Daily Lyn # the main title
 
-tagline: for who we are # it will display as the subtitle
+tagline: Here to keep it light # it will display as the subtitle
 
 description: >- # used by seo meta and the atom feed
  Place to collect various notes
