@@ -98,7 +98,7 @@ theme_mode: dark
 cdn:
 
 # the avatar on sidebar, support local or CORS resources
-avatar: ![Image](https://github.com/user-attachments/assets/a9a7e9ad-f0f3-4e21-a6a5-bcb8c2f26188)
+avatar: https://github.com/Lyn-dd/Lyn-dd.github.io/issues/1#issue-3697498709
 
 # The URL of the site-wide social preview image used in SEO `og:image` meta tag.
 # It can be overridden by a customized `page.image` in front matter.
