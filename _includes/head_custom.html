@@ -1,20 +1,27 @@
 <style>
-  /* body를 앞에 붙여서 우선순위를 최강으로 높임 */
-  body .post-preview .pin,
-  body .pin {
-    position: absolute !important;
-    top: 10px !important;       /* 위쪽 여백 */
-    left: 10px !important;      /* 왼쪽 여백 */
-    right: auto !important;     /* 오른쪽 고정 해제 */
-    bottom: auto !important;    /* 아래쪽 고정 해제 */
-    
-    transform: rotate(-45deg);  /* 핀 기울기 */
-    font-size: 1.1rem;
-    z-index: 999;               /* 무조건 맨 위에 표시 */
+  /* 1. 카드의 기준점을 확실하게 잡기 */
+  .card, .card-wrapper, .post-preview {
+    position: relative !important;
   }
 
-  /* 제목이랑 겹치지 않게 여백 주기 */
-  body .post-preview .card-body {
+  /* 2. 핀 아이콘을 무조건 찾아서 왼쪽 위로 보내기 */
+  .card .pin, 
+  .card-wrapper .pin,
+  .post-preview .pin {
+    position: absolute !important;
+    top: 15px !important;       /* 위쪽 여백 */
+    left: 15px !important;      /* 왼쪽 여백 */
+    right: auto !important;     /* 오른쪽 고정 풀기 */
+    bottom: auto !important;    /* 아래쪽 고정 풀기 */
+    
+    transform: rotate(-45deg);  /* 핀 기울기 */
+    font-size: 1.2rem;          /* 크기 */
+    z-index: 999;               /* 제일 위에 뜨게 */
+    display: block !important;  /* 숨겨져 있어도 강제로 보이기 */
+  }
+
+  /* 3. 제목이 핀에 가려지지 않게 여백 주기 */
+  .card-body, .post-content {
     padding-top: 40px !important;
   }
 </style>
