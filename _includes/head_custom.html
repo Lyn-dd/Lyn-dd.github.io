@@ -1,19 +1,20 @@
 <style>
-  /* 핀 아이콘 위치 강제 이동 */
-  .pin {
-    position: absolute !important; /* 무조건 위치 내 맘대로 하겠다 */
-    top: 15px !important;          /* 위에서 15px */
-    left: 15px !important;         /* 왼쪽에서 15px */
-    right: auto !important;        /* 오른쪽 고정 풀기 */
-    bottom: auto !important;       /* 아래쪽 고정 풀기 */
+  /* body를 앞에 붙여서 우선순위를 최강으로 높임 */
+  body .post-preview .pin,
+  body .pin {
+    position: absolute !important;
+    top: 10px !important;       /* 위쪽 여백 */
+    left: 10px !important;      /* 왼쪽 여백 */
+    right: auto !important;     /* 오른쪽 고정 해제 */
+    bottom: auto !important;    /* 아래쪽 고정 해제 */
     
-    transform: rotate(-45deg);     /* 핀을 45도 기울이기 */
-    font-size: 1.2rem;             /* 크기 키우기 */
-    z-index: 99;                   /* 다른 글자보다 위에 뜨게 */
+    transform: rotate(-45deg);  /* 핀 기울기 */
+    font-size: 1.1rem;
+    z-index: 999;               /* 무조건 맨 위에 표시 */
   }
 
-  /* 핀 때문에 제목이 가려지지 않게 윗부분 공간 벌려주기 */
-  .card-body {
+  /* 제목이랑 겹치지 않게 여백 주기 */
+  body .post-preview .card-body {
     padding-top: 40px !important;
   }
 </style>
