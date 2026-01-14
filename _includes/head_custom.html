@@ -1,27 +1,34 @@
 <style>
-  /* 1. 카드의 기준점을 확실하게 잡기 */
-  .card, .card-wrapper, .post-preview {
+  /* 1. 카드가 핀의 기준점이 되도록 설정 (이름이 뭐든 다 잡아냅니다) */
+  .card, article, .post-preview {
     position: relative !important;
   }
 
-  /* 2. 핀 아이콘을 무조건 찾아서 왼쪽 위로 보내기 */
-  .card .pin, 
-  .card-wrapper .pin,
-  .post-preview .pin {
-    position: absolute !important;
-    top: 15px !important;       /* 위쪽 여백 */
-    left: 15px !important;      /* 왼쪽 여백 */
-    right: auto !important;     /* 오른쪽 고정 풀기 */
-    bottom: auto !important;    /* 아래쪽 고정 풀기 */
+  /* 2. 핀 아이콘을 직접 타격해서 강제 이동 */
+  .pin {
+    position: absolute !important;   /* 무조건 절대 위치 사용 */
+    top: 15px !important;            /* 위에서 15px */
+    left: 15px !important;           /* 왼쪽에서 15px */
     
-    transform: rotate(-45deg);  /* 핀 기울기 */
-    font-size: 1.2rem;          /* 크기 */
-    z-index: 999;               /* 제일 위에 뜨게 */
-    display: block !important;  /* 숨겨져 있어도 강제로 보이기 */
+    right: auto !important;          /* 우측 하단 고정 해제 */
+    bottom: auto !important;         /* 하단 고정 해제 */
+    
+    margin: 0 !important;            /* 기존 여백(ms-1) 제거 */
+    z-index: 9999 !important;        /* 무조건 맨 위로 */
+    
+    /* 디자인 */
+    font-size: 1.2rem;
+    transform: rotate(-45deg);       /* 45도 기울이기 */
+    color: #d9534f;                  /* (선택) 빨간색으로 변경 */
   }
 
-  /* 3. 제목이 핀에 가려지지 않게 여백 주기 */
-  .card-body, .post-content {
+  /* 3. 혹시 핀 옆에 'Pinned'라는 글씨가 있다면 숨김 (깔끔하게 아이콘만) */
+  .pin span {
+    display: none !important;
+  }
+
+  /* 4. 제목이 핀에 가려지지 않게 여백 확보 */
+  .card-body {
     padding-top: 40px !important;
   }
 </style>
