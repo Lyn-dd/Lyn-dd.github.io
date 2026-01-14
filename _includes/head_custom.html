@@ -1,18 +1,19 @@
 <style>
-  /* 핀 아이콘을 왼쪽 위로 이동 */
-  .post-entry .pin {
-    position: absolute !important; /* 강제 위치 지정 */
-    top: 15px !important;          /* 위에서 15px 띄움 */
-    left: 15px !important;         /* 왼쪽에서 15px 띄움 */
-    right: auto !important;        /* 기존 오른쪽 설정 무시 */
-    bottom: auto !important;       /* 기존 아래 설정 무시 */
+  /* 핀 아이콘 위치 강제 이동 */
+  .pin {
+    position: absolute !important; /* 무조건 위치 내 맘대로 하겠다 */
+    top: 15px !important;          /* 위에서 15px */
+    left: 15px !important;         /* 왼쪽에서 15px */
+    right: auto !important;        /* 오른쪽 고정 풀기 */
+    bottom: auto !important;       /* 아래쪽 고정 풀기 */
     
-    font-size: 1.1rem;             /* 크기 살짝 키움 (잘 보이게) */
-    transform: rotate(-45deg);     /* 핀이 콕 박힌 것처럼 살짝 기울이기 */
+    transform: rotate(-45deg);     /* 핀을 45도 기울이기 */
+    font-size: 1.2rem;             /* 크기 키우기 */
+    z-index: 99;                   /* 다른 글자보다 위에 뜨게 */
   }
-  
-  /* (선택사항) 핀 고정된 글은 제목이 핀이랑 겹치지 않게 여백 주기 */
-  .post-entry.pinned .card-body {
-    padding-top: 35px !important; 
+
+  /* 핀 때문에 제목이 가려지지 않게 윗부분 공간 벌려주기 */
+  .card-body {
+    padding-top: 40px !important;
   }
 </style>
