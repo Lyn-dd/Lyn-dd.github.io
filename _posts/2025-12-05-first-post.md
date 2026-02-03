@@ -1,7 +1,7 @@
 ---
 title: 글쓰기 첫시도
 date: 2025-12-05 10:00:00 +0000
-categories: [일상, 기록]
+categories: [예시]
 tags: [글쓰기, github]
 ---
 
