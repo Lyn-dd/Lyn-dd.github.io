@@ -6,25 +6,293 @@ order: 6
 ---
 
 {% raw %}
+<style>
+  #pc-app,
+  #pc-app * {
+    box-sizing: border-box;
+  }
+
+  #pc-app [hidden] {
+    display: none !important;
+  }
+
+  #pc-app {
+    --pc-accent: #4f8cff;
+    --pc-keep: #2ea44f;
+    --pc-delete: #d73a49;
+    --pc-border: rgba(127, 127, 127, 0.32);
+    --pc-soft: rgba(127, 127, 127, 0.10);
+    --pc-strong: rgba(127, 127, 127, 0.18);
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  #pc-app .pc-panel {
+    border: 1px solid var(--pc-border);
+    border-radius: 18px;
+    padding: 24px;
+    background: var(--pc-soft);
+  }
+
+  #pc-app .pc-muted,
+  #pc-app .pc-note {
+    opacity: 0.78;
+  }
+
+  #pc-app .pc-note {
+    margin: 14px 0 0;
+    font-size: 0.95rem;
+  }
+
+  #pc-app .pc-drop-zone {
+    display: grid;
+    gap: 8px;
+    place-items: center;
+    min-height: 180px;
+    margin: 18px 0;
+    padding: 28px;
+    border: 3px dashed var(--pc-border);
+    border-radius: 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    user-select: none;
+  }
+
+  #pc-app .pc-drop-zone:hover,
+  #pc-app .pc-drop-zone:focus,
+  #pc-app .pc-drop-zone.pc-dragging {
+    border-color: var(--pc-accent);
+    background: rgba(79, 140, 255, 0.12);
+    transform: translateY(-1px);
+    outline: none;
+  }
+
+  #pc-app .pc-actions,
+  #pc-app .pc-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #pc-app .pc-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 42px;
+    border: 1px solid var(--pc-border);
+    border-radius: 999px;
+    padding: 10px 18px;
+    background: var(--pc-strong);
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    line-height: 1.2;
+    text-decoration: none !important;
+    transition: transform 120ms ease, filter 120ms ease, background 120ms ease;
+  }
+
+  #pc-app .pc-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+  }
+
+  #pc-app .pc-btn:active {
+    transform: translateY(0);
+  }
+
+  #pc-app .pc-btn-primary {
+    background: var(--pc-accent);
+    color: #fff !important;
+    border-color: transparent;
+  }
+
+  #pc-app .pc-btn-keep {
+    background: var(--pc-keep);
+    color: #fff !important;
+    border-color: transparent;
+  }
+
+  #pc-app .pc-btn-delete {
+    background: var(--pc-delete);
+    color: #fff !important;
+    border-color: transparent;
+  }
+
+  #pc-app .pc-btn-small {
+    min-height: 34px;
+    padding: 7px 12px;
+    font-size: 0.9rem;
+  }
+
+  #pc-app .pc-visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    clip-path: inset(50%) !important;
+  }
+
+  #pc-app .pc-topbar {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  #pc-app .pc-progress {
+    width: 100%;
+    height: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--pc-strong);
+    margin-bottom: 14px;
+  }
+
+  #pc-app .pc-progress-bar {
+    width: 0%;
+    height: 100%;
+    background: var(--pc-accent);
+    transition: width 180ms ease;
+  }
+
+  #pc-app .pc-card {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: min(68vh, 650px);
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid var(--pc-border);
+    background:
+      linear-gradient(45deg, rgba(127, 127, 127, 0.10) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(127, 127, 127, 0.10) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(127, 127, 127, 0.10) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(127, 127, 127, 0.10) 75%);
+    background-size: 24px 24px;
+    background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+    touch-action: pan-y;
+    user-select: none;
+    will-change: transform;
+  }
+
+  #pc-app .pc-card img {
+    display: block;
+    max-width: 100% !important;
+    max-height: min(68vh, 650px) !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.30);
+    pointer-events: none;
+  }
+
+  #pc-app .pc-fallback {
+    display: grid;
+    gap: 8px;
+    place-items: center;
+    padding: 28px;
+    text-align: center;
+  }
+
+  #pc-app .pc-swipe-label {
+    position: absolute;
+    z-index: 2;
+    top: 20px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    opacity: 0;
+    transform: scale(0.94);
+    transition: opacity 100ms ease, transform 100ms ease;
+    pointer-events: none;
+  }
+
+  #pc-app .pc-swipe-left {
+    left: 20px;
+    background: var(--pc-keep);
+  }
+
+  #pc-app .pc-swipe-right {
+    right: 20px;
+    background: var(--pc-delete);
+  }
+
+  #pc-app .pc-card.pc-show-keep .pc-swipe-left,
+  #pc-app .pc-card.pc-show-delete .pc-swipe-right {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  #pc-app .pc-controls {
+    margin-top: 14px;
+  }
+
+  #pc-app .pc-summary {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  @media (max-width: 640px) {
+    #pc-app .pc-panel {
+      padding: 16px;
+    }
+
+    #pc-app .pc-card {
+      min-height: 58vh;
+    }
+
+    #pc-app .pc-card img {
+      max-height: 58vh !important;
+    }
+
+    #pc-app .pc-topbar {
+      flex-direction: column;
+    }
+
+    #pc-app .pc-actions,
+    #pc-app .pc-controls {
+      align-items: stretch;
+    }
+
+    #pc-app .pc-btn {
+      width: 100%;
+    }
+  }
+</style>
+
 <div id="pc-app" class="pc-app">
   <section id="pc-intro" class="pc-panel">
     <h2>PHOTO CLEANER</h2>
-    <p class="pc-muted">이미지를 브라우저에서 분류한 후, 삭제 예정 파일을 휴지통으로 옮깁니다.</p>
+    <p class="pc-muted">이미지를 브라우저에서 분류한 후, 삭제 예정 파일을 Windows 휴지통으로 옮깁니다.</p>
 
-    <div id="pc-drop-zone" class="pc-drop-zone" tabindex="0" role="button" aria-label="이미지 파일 또는 폴더를 끌어다 놓기">
+    <label id="pc-drop-zone" class="pc-drop-zone" for="pc-folder-input" tabindex="0" role="button" aria-label="이미지 파일 또는 폴더를 끌어다 놓기">
       <strong>이미지 폴더나 이미지 파일들을 여기에 드래그 앤 드롭하세요.</strong>
       <span>또는 아래 버튼으로 직접 고를 수 있습니다.</span>
-    </div>
+    </label>
 
     <div class="pc-actions">
-      <button type="button" id="pc-pick-folder" class="pc-btn pc-btn-primary">폴더 선택</button>
-      <button type="button" id="pc-pick-files" class="pc-btn">파일 여러 개 선택</button>
+      <label for="pc-folder-input" class="pc-btn pc-btn-primary">폴더 선택</label>
+      <label for="pc-file-input" class="pc-btn">파일 여러 개 선택</label>
     </div>
 
-    <p class="pc-note">권장 방식은 <strong>폴더 선택</strong>. 그래야 하위 폴더 경로까지 삭제 스크립트에 정확히 들어갑니다.</p>
+    <p class="pc-note">권장 방식은 <strong>폴더 선택</strong>입니다. 그래야 하위 폴더 경로까지 삭제 스크립트에 정확히 들어갑니다.</p>
 
-    <input id="pc-folder-input" type="file" accept="image/*" webkitdirectory directory multiple hidden>
-    <input id="pc-file-input" type="file" accept="image/*" multiple hidden>
+    <input id="pc-folder-input" class="pc-visually-hidden" type="file" accept="image/*" webkitdirectory directory multiple>
+    <input id="pc-file-input" class="pc-visually-hidden" type="file" accept="image/*" multiple>
+
+    <noscript>
+      <p class="pc-note">이 도구는 JavaScript가 켜져 있어야 작동합니다.</p>
+    </noscript>
   </section>
 
   <section id="pc-workspace" class="pc-panel" hidden>
@@ -56,7 +324,7 @@ order: 6
       <button type="button" id="pc-delete" class="pc-btn pc-btn-delete">삭제 →</button>
     </div>
 
-    <p class="pc-note">마우스/터치로 왼쪽 스와이프하면 유지, 오른쪽 스와이프하면 삭제 예정입니다. 키보드는 ← 유지, → 삭제, Z 또는 Backspace 되돌리기.</p>
+    <p class="pc-note">마우스/터치로 왼쪽 스와이프하면 유지, 오른쪽 스와이프하면 삭제 예정입니다. 키보드는 ← 유지, → 삭제, Z 또는 Backspace 되돌리기입니다.</p>
   </section>
 
   <section id="pc-done" class="pc-panel" hidden>
@@ -71,203 +339,6 @@ order: 6
   </section>
 </div>
 
-<style>
-  #pc-app, #pc-app * { box-sizing: border-box; }
-  #pc-app [hidden] { display: none !important; }
-  #pc-app {
-    --pc-accent: #4f8cff;
-    --pc-keep: #2ea44f;
-    --pc-delete: #d73a49;
-    --pc-border: rgba(127, 127, 127, 0.28);
-    --pc-soft: rgba(127, 127, 127, 0.10);
-    --pc-strong: rgba(127, 127, 127, 0.18);
-    max-width: 980px;
-    margin: 0 auto;
-  }
-  #pc-app .pc-panel {
-    border: 1px solid var(--pc-border);
-    border-radius: 18px;
-    padding: 24px;
-    background: var(--pc-soft);
-  }
-  #pc-app .pc-muted,
-  #pc-app .pc-note {
-    opacity: 0.78;
-  }
-  #pc-app .pc-note {
-    margin: 14px 0 0;
-    font-size: 0.95rem;
-  }
-  #pc-app .pc-drop-zone {
-    display: grid;
-    gap: 8px;
-    place-items: center;
-    min-height: 180px;
-    margin: 18px 0;
-    padding: 28px;
-    border: 3px dashed var(--pc-border);
-    border-radius: 18px;
-    text-align: center;
-    cursor: pointer;
-    transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
-    user-select: none;
-  }
-  #pc-app .pc-drop-zone:hover,
-  #pc-app .pc-drop-zone:focus,
-  #pc-app .pc-drop-zone.pc-dragging {
-    border-color: var(--pc-accent);
-    background: rgba(79, 140, 255, 0.12);
-    transform: translateY(-1px);
-    outline: none;
-  }
-  #pc-app .pc-actions,
-  #pc-app .pc-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
-  }
-  #pc-app .pc-btn {
-    border: 1px solid var(--pc-border);
-    border-radius: 999px;
-    padding: 10px 18px;
-    background: var(--pc-strong);
-    color: inherit;
-    cursor: pointer;
-    font: inherit;
-    line-height: 1.2;
-    transition: transform 120ms ease, filter 120ms ease, background 120ms ease;
-  }
-  #pc-app .pc-btn:hover {
-    transform: translateY(-1px);
-    filter: brightness(1.05);
-  }
-  #pc-app .pc-btn:active {
-    transform: translateY(0);
-  }
-  #pc-app .pc-btn-primary {
-    background: var(--pc-accent);
-    color: white;
-    border-color: transparent;
-  }
-  #pc-app .pc-btn-keep {
-    background: var(--pc-keep);
-    color: white;
-    border-color: transparent;
-  }
-  #pc-app .pc-btn-delete {
-    background: var(--pc-delete);
-    color: white;
-    border-color: transparent;
-  }
-  #pc-app .pc-btn-small {
-    padding: 7px 12px;
-    font-size: 0.9rem;
-  }
-  #pc-app .pc-topbar {
-    display: flex;
-    gap: 12px;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-  }
-  #pc-app .pc-progress {
-    width: 100%;
-    height: 10px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: var(--pc-strong);
-    margin-bottom: 14px;
-  }
-  #pc-app .pc-progress-bar {
-    width: 0%;
-    height: 100%;
-    background: var(--pc-accent);
-    transition: width 180ms ease;
-  }
-  #pc-app .pc-card {
-    position: relative;
-    display: grid;
-    place-items: center;
-    min-height: min(68vh, 650px);
-    overflow: hidden;
-    border-radius: 18px;
-    border: 1px solid var(--pc-border);
-    background:
-      linear-gradient(45deg, rgba(127,127,127,0.10) 25%, transparent 25%),
-      linear-gradient(-45deg, rgba(127,127,127,0.10) 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, rgba(127,127,127,0.10) 75%),
-      linear-gradient(-45deg, transparent 75%, rgba(127,127,127,0.10) 75%);
-    background-size: 24px 24px;
-    background-position: 0 0, 0 12px, 12px -12px, -12px 0;
-    touch-action: pan-y;
-    user-select: none;
-    will-change: transform;
-  }
-  #pc-app .pc-card img {
-    display: block;
-    max-width: 100% !important;
-    max-height: min(68vh, 650px) !important;
-    width: auto !important;
-    height: auto !important;
-    margin: 0 auto !important;
-    object-fit: contain;
-    border-radius: 12px;
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.30);
-    pointer-events: none;
-  }
-  #pc-app .pc-fallback {
-    display: grid;
-    gap: 8px;
-    place-items: center;
-    padding: 28px;
-    text-align: center;
-  }
-  #pc-app .pc-swipe-label {
-    position: absolute;
-    z-index: 2;
-    top: 20px;
-    padding: 8px 14px;
-    border-radius: 999px;
-    color: white;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    opacity: 0;
-    transform: scale(0.94);
-    transition: opacity 100ms ease, transform 100ms ease;
-    pointer-events: none;
-  }
-  #pc-app .pc-swipe-left {
-    left: 20px;
-    background: var(--pc-keep);
-  }
-  #pc-app .pc-swipe-right {
-    right: 20px;
-    background: var(--pc-delete);
-  }
-  #pc-app .pc-card.pc-show-keep .pc-swipe-left,
-  #pc-app .pc-card.pc-show-delete .pc-swipe-right {
-    opacity: 1;
-    transform: scale(1);
-  }
-  #pc-app .pc-controls {
-    margin-top: 14px;
-  }
-  #pc-app .pc-summary {
-    font-size: 1.1rem;
-    font-weight: 700;
-  }
-  @media (max-width: 640px) {
-    #pc-app .pc-panel { padding: 16px; }
-    #pc-app .pc-card { min-height: 58vh; }
-    #pc-app .pc-card img { max-height: 58vh !important; }
-    #pc-app .pc-topbar { flex-direction: column; }
-    #pc-app .pc-actions, #pc-app .pc-controls { align-items: stretch; }
-    #pc-app .pc-btn { width: 100%; }
-  }
-</style>
-
 <script>
 (() => {
   'use strict';
@@ -275,15 +346,16 @@ order: 6
   const IMAGE_EXT_RE = /\.(avif|bmp|gif|heic|heif|jpe?g|png|svg|tiff?|webp)$/i;
   const collator = new Intl.Collator('ko-KR', { numeric: true, sensitivity: 'base' });
 
+  const app = document.getElementById('pc-app');
+  if (!app) return;
+
   const el = {
     intro: document.getElementById('pc-intro'),
-    dropZone: document.getElementById('pc-drop-zone'),
-    pickFolder: document.getElementById('pc-pick-folder'),
-    pickFiles: document.getElementById('pc-pick-files'),
-    folderInput: document.getElementById('pc-folder-input'),
-    fileInput: document.getElementById('pc-file-input'),
     workspace: document.getElementById('pc-workspace'),
     done: document.getElementById('pc-done'),
+    dropZone: document.getElementById('pc-drop-zone'),
+    folderInput: document.getElementById('pc-folder-input'),
+    fileInput: document.getElementById('pc-file-input'),
     status: document.getElementById('pc-status'),
     fileName: document.getElementById('pc-file-name'),
     progressBar: document.getElementById('pc-progress-bar'),
@@ -408,6 +480,8 @@ order: 6
     state.index = 0;
     state.decisions = [];
     state.rootHint = rootHint || '';
+    el.folderInput.value = '';
+    el.fileInput.value = '';
     showSection('workspace');
     renderCurrent();
   }
@@ -474,6 +548,7 @@ order: 6
     state.decisions = [];
     state.rootHint = '';
     state.animating = false;
+    state.gesture = null;
     el.folderInput.value = '';
     el.fileInput.value = '';
     showSection('intro');
@@ -658,16 +733,6 @@ order: 6
     downloadBlob('photo-cleaner-delete-list.txt', lines.join('\n'), 'text/plain;charset=utf-8');
   }
 
-  el.pickFolder.addEventListener('click', () => el.folderInput.click());
-  el.pickFiles.addEventListener('click', () => el.fileInput.click());
-  el.dropZone.addEventListener('click', () => el.folderInput.click());
-  el.dropZone.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      el.folderInput.click();
-    }
-  });
-
   el.folderInput.addEventListener('change', () => {
     const files = Array.from(el.folderInput.files || []);
     const firstPath = files[0] && files[0].webkitRelativePath ? files[0].webkitRelativePath : '';
@@ -680,22 +745,26 @@ order: 6
   });
 
   ['dragenter', 'dragover'].forEach((type) => {
-    el.dropZone.addEventListener(type, (event) => {
+    window.addEventListener(type, (event) => {
       event.preventDefault();
-      event.stopPropagation();
-      el.dropZone.classList.add('pc-dragging');
+      if (app.contains(event.target)) {
+        el.dropZone.classList.add('pc-dragging');
+      }
     });
   });
 
-  ['dragleave', 'drop'].forEach((type) => {
-    el.dropZone.addEventListener(type, (event) => {
-      event.preventDefault();
-      event.stopPropagation();
+  window.addEventListener('dragleave', (event) => {
+    event.preventDefault();
+    if (!app.contains(event.relatedTarget)) {
       el.dropZone.classList.remove('pc-dragging');
-    });
+    }
   });
 
-  el.dropZone.addEventListener('drop', async (event) => {
+  window.addEventListener('drop', async (event) => {
+    event.preventDefault();
+    el.dropZone.classList.remove('pc-dragging');
+
+    if (!event.dataTransfer || !event.dataTransfer.files || !event.dataTransfer.files.length) return;
     const records = await recordsFromDataTransfer(event.dataTransfer);
     startSession(records, '드롭한 폴더 또는 파일들이 들어 있는 폴더');
   });
