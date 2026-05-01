@@ -18,7 +18,7 @@ order: 6
     body .post-content .btn:hover { background-color: #0055aa; }
 </style>
 
-<div id="drop-zone">이곳에 정리할 이미지 파일들을 드래그 앤 드롭해주세요.</div>
+<div id="drop-zone">이곳에 정리할 이미지 파일들을 드래그 앤 드롭해주세듸.</div>
 
 <div id="workspace">
     <div id="image-container"></div>
@@ -50,13 +50,13 @@ order: 6
             workspace.style.display = 'block';
             showImage(currentIndex);
         } else {
-            alert('이미지 파일만 인식됩니다.');
+            alert('이미지 파일만 인식됩니듸.');
         }
     });
 
     function showImage(index) {
         if (index >= files.length) {
-            imageContainer.innerHTML = '<h3 style="color: #fff;">분류 완료! 아래 버튼을 눌러 스크립트를 다운로드하세요.</h3>';
+            imageContainer.innerHTML = '<h3 style="color: #fff;">분류 완료! 아래 버튼을 눌러 스크립트를 다운로드하세듸.</h3>';
             statusText.innerText = `총 ${files.length}개 중 ${deleteList.length}개 삭제 예정`;
             statusText.style.color = '#fff';
             downloadBtn.style.display = 'inline-block';
@@ -84,11 +84,11 @@ order: 6
 
     downloadBtn.addEventListener('click', () => {
         if (deleteList.length === 0) {
-            alert('휴지통으로 보낼 파일이 없습니다.');
+            alert('휴지통으로 보낼 파일이 없습니듸.');
             return;
         }
         const fileNames = deleteList.map(name => `"${name}"`).join(" ");
-        const batContent = `@echo off\nchcp 65001 >nul\nset files=${fileNames}\nfor %%f in (%files%) do (\n    powershell -Command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('%%~f', 'OnlyErrorDialogs', 'SendToRecycleBin')"\n)\necho.\necho 선택한 파일들이 휴지통으로 이동되었습니다.\npause`;
+        const batContent = `@echo off\nchcp 65001 >nul\nset files=${fileNames}\nfor %%f in (%files%) do (\n    powershell -Command "Add-Type -AssemblyName Microsoft.VisualBasic; [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile('%%~f', 'OnlyErrorDialogs', 'SendToRecycleBin')"\n)\necho.\necho 선택한 파일들이 휴지통으로 이동되었습니듸.\npause`;
         const blob = new Blob([batContent], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
