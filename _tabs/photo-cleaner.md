@@ -5,14 +5,17 @@ icon: fas fa-fw fa-images
 order: 6
 ---
 
+{% raw %}
 <style>
-    #drop-zone { border: 3px dashed #bbb; border-radius: 10px; padding: 50px; text-align: center; cursor: pointer; margin-bottom: 20px; transition: 0.3s; }
-    #drop-zone:hover { background-color: rgba(0, 102, 204, 0.1); border-color: #0066cc; }
-    #workspace { display: none; text-align: center; }
-    #image-container img { max-width: 80%; max-height: 500px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-    .controls { margin-top: 20px; font-size: 1.1rem; }
-    .btn { padding: 10px 20px; font-size: 1rem; cursor: pointer; background-color: #0066cc; color: white; border: none; border-radius: 5px; margin-top: 15px; }
-    .btn:hover { background-color: #0055aa; }
+    /* 테마 스타일과 충돌을 피하기 위해 더 구체적인 선택자 사용 및 !important 추가 */
+    body .post-content #drop-zone { border: 3px dashed #bbb; border-radius: 10px; padding: 50px; text-align: center; cursor: pointer; margin-bottom: 20px; transition: 0.3s; color: #888; }
+    body .post-content #drop-zone:hover { background-color: rgba(0, 102, 204, 0.1); border-color: #0066cc; color: #fff; }
+    body .post-content #workspace { display: none; text-align: center; }
+    /* 이미지가 클릭되지 않게 하고(pointer-events: none) 테마의 이미지 스타일을 우회 */
+    body .post-content #image-container img { max-width: 80% !important; max-height: 500px !important; border-radius: 8px !important; box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important; pointer-events: none !important; margin: 0 auto; display: block; }
+    body .post-content .controls { margin-top: 20px; font-size: 1.1rem; color: #fff; }
+    body .post-content .btn { padding: 10px 20px; font-size: 1rem; cursor: pointer; background-color: #0066cc; color: white; border: none; border-radius: 5px; margin-top: 15px; }
+    body .post-content .btn:hover { background-color: #0055aa; }
 </style>
 
 <div id="drop-zone">이곳에 정리할 이미지 파일들을 드래그 앤 드롭해주세요.</div>
@@ -53,15 +56,18 @@ order: 6
 
     function showImage(index) {
         if (index >= files.length) {
-            imageContainer.innerHTML = '<h3>분류 완료! 아래 버튼을 눌러 스크립트를 다운로드하세요.</h3>';
+            imageContainer.innerHTML = '<h3 style="color: #fff;">분류 완료! 아래 버튼을 눌러 스크립트를 다운로드하세요.</h3>';
             statusText.innerText = `총 ${files.length}개 중 ${deleteList.length}개 삭제 예정`;
+            statusText.style.color = '#fff';
             downloadBtn.style.display = 'inline-block';
             return;
         }
         const file = files[index];
         const url = URL.createObjectURL(file);
-        imageContainer.innerHTML = `<img src="${url}" alt="${file.name}">`;
+        // pointer-events: none과 data-no-lightgallery, class="no-lazyload" 속성 추가
+        imageContainer.innerHTML = `<img src="${url}" alt="${file.name}" style="pointer-events: none;" data-no-lightgallery="true" class="no-lazyload">`;
         statusText.innerText = `현재 진행: ${index + 1} / ${files.length} (${file.name})`;
+        statusText.style.color = '#fff';
     }
 
     document.addEventListener('keydown', (e) => {
@@ -91,3 +97,4 @@ order: 6
         a.click();
     });
 </script>
+{% endraw %}
