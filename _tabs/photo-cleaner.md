@@ -35,6 +35,13 @@ order: 6
   }
 </style>
 
-<p>
-  화면이 뜨지 않으면 <a href="/photo-cleaner-app.html">PHOTO CLEANER 단독 페이지</a>를 열어주세요.
-</p>
+<script>
+  window.addEventListener('message', function (event) {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== 'photo-cleaner-height') return;
+    var frame = document.getElementById('photo-cleaner-frame');
+    if (!frame) return;
+    var height = Math.max(920, Number(event.data.height) || 0);
+    frame.style.height = height + 'px';
+  });
+</script>
