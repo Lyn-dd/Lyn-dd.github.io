@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PHOTO CLEANER</title>
+  <style>
+    :root {
+      color-scheme: dark light;
+      --pc-bg: #1f1f22;
+      --pc-fg: #ececec;
+      --pc-muted: rgba(236,236,236,.70);
+      --pc-panel: rgba(127,127,127,.10);
+      --pc-panel-2: rgba(127,127,127,.15);
+      --pc-border: rgba(127,127,127,.30);
+      --pc-accent: #4f8cff;
+      --pc-keep: #2ea44f;
+      --pc-delete: #d73a49;
+      --pc-warn: #ffb86c;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --pc-bg: #ffffff;
+        --pc-fg: #202124;
+        --pc-muted: rgba(32,33,36,.68);
+        --pc-panel: rgba(0,0,0,.04);
+        --pc-panel-2: rgba(0,0,0,.07);
+        --pc-border: rgba(0,0,0,.18);
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--pc-bg); color: var(--pc-fg); }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.55; }
+    [hidden] { display: none !important; }
+    .app { max-width: 980px; margin: 0 auto; padding: 24px; }
+    .panel { border: 1px solid var(--pc-border); border-radius: 20px; padding: 24px; background: var(--pc-panel); }
+    h1, h2, h3 { line-height: 1.2; margin-top: 0; }
+    .muted { color: var(--pc-muted); }
+    .drop-zone {
+      display: grid;
+      place-items: center;
+      gap: 10px;
+      min-height: 180px;
+      margin: 18px 0;
+      padding: 28px;
+      border: 3px dashed var(--pc-border);
+      border-radius: 18px;
+      text-align: center;
+      transition: border-color .16s ease, background .16s ease, transform .16s ease;
+    }
+    .drop-zone.dragging { border-color: var(--pc-accent); background: rgba(79,140,255,.12); transform: translateY(-1px); }
+    .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+    .upload-box { display: grid; gap: 9px; padding: 14px; border: 1px solid var(--pc-border); border-radius: 15px; background: var(--pc-panel-2); }
+    .native-file { width: 100%; max-width: 100%; }
+    .note { margin: 14px 0 0; color: var(--pc-muted); font-size: .95rem; }
+    .topbar { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .progress { width: 100%; height: 10px; overflow: hidden; border-radius: 999px; background: var(--pc-panel-2); margin-bottom: 14px; }
+    .progress-bar { width: 0%; height: 100%; background: var(--pc-accent); transition: width .18s ease; }
+    .card {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: min(68vh, 650px);
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid var(--pc-border);
+      background:
+        linear-gradient(45deg, rgba(127,127,127,.10) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(127,127,127,.10) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(127,127,127,.10) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(127,127,127,.10) 75%);
+      background-size: 24px 24px;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+      touch-action: pan-y;
+      user-select: none;
+      will-change: transform;
+    }
+    .card img { display: block; max-width: 100%; max-height: min(68vh, 650px); width: auto; height: auto; object-fit: contain; border-radius: 12px; box-shadow: 0 18px 48px rgba(0,0,0,.30); pointer-events: none; }
+    .fallback { display: grid; gap: 8px; place-items: center; padding: 28px; text-align: center; }
+    .swipe-label { position: absolute; z-index: 2; top: 20px; padding: 8px 14px; border-radius: 999px; color: white; font-weight: 800; letter-spacing: .06em; opacity: 0; transform: scale(.94); transition: opacity .1s ease, transform .1s ease; pointer-events: none; }
+    .swipe-left { left: 20px; background: var(--pc-keep); }
+    .swipe-right { right: 20px; background: var(--pc-delete); }
+    .card.show-keep .swipe-left, .card.show-delete .swipe-right { opacity: 1; transform: scale(1); }
+    .actions, .controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
+    .controls { margin-top: 14px; }
+    button { border: 1px solid var(--pc-border); border-radius: 999px; padding: 10px 18px; background: var(--pc-panel-2); color: inherit; cursor: pointer; font: inherit; line-height: 1.2; transition: transform .12s ease, filter .12s ease; }
+    button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+    button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .primary { background: var(--pc-accent); color: white; border-color: transparent; }
+    .keep { background: var(--pc-keep); color: white; border-color: transparent; }
+    .delete { background: var(--pc-delete); color: white; border-color: transparent; }
+    .small { padding: 7px 12px; font-size: .9rem; }
+    .summary { font-size: 1.08rem; font-weight: 700; }
+    .warn { border-left: 4px solid var(--pc-warn); padding: 12px 14px; border-radius: 12px; background: rgba(255,184,108,.12); }
+    textarea { width: 100%; min-height: 260px; margin-top: 12px; padding: 12px; border: 1px solid var(--pc-border); border-radius: 12px; background: var(--pc-panel-2); color: inherit; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 13px; line-height: 1.45; resize: vertical; }
+    .result-grid { display: grid; gap: 16px; margin-top: 18px; }
+    @media (max-width: 680px) {
+      .app { padding: 14px; }
+      .panel { padding: 16px; }
+      .upload-grid { grid-template-columns: 1fr; }
+      .topbar { flex-direction: column; }
+      .card { min-height: 58vh; }
+      .card img { max-height: 58vh; }
+      .actions, .controls { align-items: stretch; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section id="intro" class="panel">
+      <h1>PHOTO CLEANER</h1>
+      <p class="muted">이미지를 브라우저에서 분류한 뒤, 삭제 예정 목록을 만들고 Windows 휴지통으로 옮길 수 있게 도와줍니다.</p>
+
+      <div id="drop-zone" class="drop-zone">
+        <strong>이미지 폴더나 이미지 파일들을 여기에 드래그 앤 드롭하세요.</strong>
+        <span class="muted">드래그가 안 되면 아래의 기본 파일 선택 칸을 사용하세요.</span>
+      </div>
+
+      <div class="upload-grid">
+        <label class="upload-box">
+          <strong>폴더 선택</strong>
+          <input id="folder-input" class="native-file" type="file" accept="image/*" webkitdirectory directory multiple>
+          <span class="muted">권장 방식입니다. 하위 폴더 경로까지 보존합니다.</span>
+        </label>
+        <label class="upload-box">
+          <strong>파일 여러 개 선택</strong>
+          <input id="file-input" class="native-file" type="file" accept="image/*" multiple>
+          <span class="muted">같은 폴더 안의 파일만 고를 때 사용하세요.</span>
+        </label>
+      </div>
+
+      <p class="note">파일은 서버로 전송되지 않고, 브라우저 안에서 미리보기용으로만 읽힙니다.</p>
+      <p id="js-status" class="warn">JavaScript 초기화 중입니다. 이 문구가 계속 보이면 페이지 파일이 코드가 아닌 텍스트로 올라간 상태이거나, 브라우저가 스크립트를 막은 상태입니다.</p>
+    </section>
+
+    <section id="workspace" class="panel" hidden>
+      <div class="topbar">
+        <div>
+          <strong id="status">준비 중입니다.</strong>
+          <div id="file-name" class="muted"></div>
+        </div>
+        <button type="button" id="reset" class="small">처음부터</button>
+      </div>
+
+      <div class="progress"><div id="progress-bar" class="progress-bar"></div></div>
+
+      <div id="card" class="card" aria-live="polite">
+        <div class="swipe-label swipe-left">유지</div>
+        <div class="swipe-label swipe-right">삭제</div>
+        <img id="image" alt="현재 이미지" draggable="false">
+        <div id="fallback" class="fallback" hidden>
+          <strong>미리보기를 표시할 수 없는 이미지 형식입니다.</strong>
+          <span class="muted">분류는 계속 가능합니다.</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button type="button" id="keep" class="keep">← 유지</button>
+        <button type="button" id="undo">되돌리기</button>
+        <button type="button" id="delete" class="delete">삭제 →</button>
+      </div>
+      <p class="note">마우스/터치로 왼쪽 스와이프하면 유지, 오른쪽 스와이프하면 삭제 예정입니다. 키보드는 ← 유지, → 삭제, Z 또는 Backspace 되돌리기입니다.</p>
+    </section>
+
+    <section id="done" class="panel" hidden>
+      <h2>분류 완료</h2>
+      <p id="summary" class="summary"></p>
+      <div class="actions">
+        <button type="button" id="download-json" class="primary">삭제 목록 JSON 다운로드</button>
+        <button type="button" id="copy-ps">PowerShell 처리 명령 복사</button>
+        <button type="button" id="restart">다시 분류</button>
+      </div>
+
+      <div class="result-grid">
+        <div class="warn">
+          <strong>권장 처리 방식</strong><br>
+          1) 삭제 목록 JSON을 다운로드합니다.<br>
+          2) PowerShell 처리 명령을 복사합니다.<br>
+          3) Windows PowerShell 또는 Windows Terminal을 열고 붙여넣습니다.<br>
+          4) 터미널 안내에 따라 JSON 파일 경로와 원본 이미지 폴더 경로를 넣으면 삭제 예정 파일만 휴지통으로 이동합니다.
+        </div>
+        <div>
+          <strong>복사용 PowerShell 명령</strong>
+          <textarea id="ps-command" readonly></textarea>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+  (() => {
+    'use strict';
+
+    const IMAGE_EXT_RE = /\.(avif|bmp|gif|heic|heif|jpe?g|png|svg|tiff?|webp)$/i;
+    const collator = new Intl.Collator('ko-KR', { numeric: true, sensitivity: 'base' });
+
+    const el = {
+      intro: document.getElementById('intro'),
+      workspace: document.getElementById('workspace'),
+      done: document.getElementById('done'),
+      jsStatus: document.getElementById('js-status'),
+      dropZone: document.getElementById('drop-zone'),
+      folderInput: document.getElementById('folder-input'),
+      fileInput: document.getElementById('file-input'),
+      status: document.getElementById('status'),
+      fileName: document.getElementById('file-name'),
+      progressBar: document.getElementById('progress-bar'),
+      card: document.getElementById('card'),
+      image: document.getElementById('image'),
+      fallback: document.getElementById('fallback'),
+      keep: document.getElementById('keep'),
+      undo: document.getElementById('undo'),
+      delete: document.getElementById('delete'),
+      reset: document.getElementById('reset'),
+      summary: document.getElementById('summary'),
+      downloadJson: document.getElementById('download-json'),
+      copyPs: document.getElementById('copy-ps'),
+      psCommand: document.getElementById('ps-command'),
+      restart: document.getElementById('restart')
+    };
+
+    const required = Object.entries(el).filter(([, value]) => !value).map(([key]) => key);
+    if (required.length) {
+      alert('PHOTO CLEANER HTML 구조가 깨져 있습니다: ' + required.join(', '));
+      return;
+    }
+
+    const state = {
+      items: [],
+      index: 0,
+      decisions: [],
+      activeUrl: null,
+      preload: null,
+      gesture: null,
+      animating: false
+    };
+
+    function isImageFile(file) {
+      return Boolean(file && ((file.type && file.type.startsWith('image/')) || IMAGE_EXT_RE.test(file.name || '')));
+    }
+
+    function normalizePath(path) {
+      const raw = String(path || '').replace(/\\+/g, '/').replace(/^[a-zA-Z]:\//, '').replace(/^\/+/, '');
+      const parts = raw.split('/').filter((part) => part && part !== '.' && part !== '..');
+      return parts.join('/') || 'unknown-image';
+    }
+
+    function stripFirstSegment(path) {
+      const parts = normalizePath(path).split('/');
+      return parts.length > 1 ? parts.slice(1).join('/') : parts[0];
+    }
+
+    function makeRecord(file, relativePath) {
+      return {
+        file,
+        name: file.name || 'image',
+        size: file.size || 0,
+        relativePath: normalizePath(relativePath || file.webkitRelativePath || file.name || 'image')
+      };
+    }
+
+    function finalizeRecords(records) {
+      return records
+        .filter((record) => record && isImageFile(record.file))
+        .sort((a, b) => collator.compare(a.relativePath, b.relativePath));
+    }
+
+    function getDeletedItems() {
+      return state.decisions.filter((entry) => entry.action === 'delete').map((entry) => entry.item);
+    }
+
+    function getKeepCount() {
+      return state.decisions.filter((entry) => entry.action === 'keep').length;
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let value = bytes;
+      let unitIndex = 0;
+      while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex += 1;
+      }
+      return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    }
+
+    function clearObjectUrls() {
+      if (state.activeUrl) URL.revokeObjectURL(state.activeUrl);
+      if (state.preload && state.preload.url) URL.revokeObjectURL(state.preload.url);
+      state.activeUrl = null;
+      state.preload = null;
+    }
+
+    function takePreloadedUrl(index) {
+      if (state.preload && state.preload.index === index) {
+        const url = state.preload.url;
+        state.preload = null;
+        return url;
+      }
+      return URL.createObjectURL(state.items[index].file);
+    }
+
+    function preloadNext(index) {
+      if (state.preload && state.preload.url) {
+        URL.revokeObjectURL(state.preload.url);
+        state.preload = null;
+      }
+      if (index < 0 || index >= state.items.length) return;
+      const url = URL.createObjectURL(state.items[index].file);
+      const img = new Image();
+      img.src = url;
+      state.preload = { index, url, img };
+    }
+
+    function showSection(section) {
+      el.intro.hidden = section !== 'intro';
+      el.workspace.hidden = section !== 'workspace';
+      el.done.hidden = section !== 'done';
+    }
+
+    function startSession(records) {
+      const items = finalizeRecords(records);
+      if (!items.length) {
+        alert('이미지 파일을 찾지 못했습니다. JPG, PNG, WEBP 같은 이미지가 들어 있는 폴더를 골라주세요.');
+        return;
+      }
+
+      clearObjectUrls();
+      state.items = items;
+      state.index = 0;
+      state.decisions = [];
+      showSection('workspace');
+      renderCurrent();
+    }
+
+    function renderCurrent() {
+      state.animating = false;
+      resetCardTransform();
+
+      const total = state.items.length;
+      const done = state.decisions.length;
+      const deleted = getDeletedItems().length;
+
+      if (state.index >= total) {
+        clearObjectUrls();
+        showSection('done');
+        el.summary.textContent = `총 ${total}개 중 유지 ${getKeepCount()}개, 삭제 예정 ${deleted}개입니다.`;
+        el.psCommand.value = getPowerShellCommand();
+        return;
+      }
+
+      const item = state.items[state.index];
+      if (state.activeUrl) URL.revokeObjectURL(state.activeUrl);
+      state.activeUrl = takePreloadedUrl(state.index);
+
+      el.image.hidden = false;
+      el.fallback.hidden = true;
+      el.image.onload = () => {
+        el.image.hidden = false;
+        el.fallback.hidden = true;
+      };
+      el.image.onerror = () => {
+        el.image.hidden = true;
+        el.fallback.hidden = false;
+      };
+      el.image.src = state.activeUrl;
+      el.image.alt = item.name;
+
+      el.status.textContent = `${state.index + 1} / ${total} 분류 중 · 삭제 예정 ${deleted}개`;
+      el.fileName.textContent = `${item.relativePath} · ${formatBytes(item.size)}`;
+      el.progressBar.style.width = `${Math.round((done / total) * 100)}%`;
+      el.undo.disabled = state.decisions.length === 0;
+
+      preloadNext(state.index + 1);
+    }
+
+    function decide(action) {
+      if (state.index >= state.items.length) return;
+      state.decisions.push({ action, item: state.items[state.index] });
+      state.index += 1;
+      renderCurrent();
+    }
+
+    function undo() {
+      if (!state.decisions.length) return;
+      state.decisions.pop();
+      state.index = Math.max(0, state.index - 1);
+      renderCurrent();
+    }
+
+    function resetAll() {
+      clearObjectUrls();
+      state.items = [];
+      state.index = 0;
+      state.decisions = [];
+      state.animating = false;
+      el.folderInput.value = '';
+      el.fileInput.value = '';
+      showSection('intro');
+    }
+
+    function resetCardTransform() {
+      el.card.style.transition = '';
+      el.card.style.transform = '';
+      el.card.classList.remove('show-keep', 'show-delete');
+    }
+
+    function animateDecision(action) {
+      if (state.animating || state.index >= state.items.length) return;
+      state.animating = true;
+      const dir = action === 'delete' ? 1 : -1;
+      el.card.style.transition = 'transform 140ms ease, opacity 140ms ease';
+      el.card.style.transform = `translateX(${dir * 120}%) rotate(${dir * 8}deg)`;
+      setTimeout(() => decide(action), 110);
+    }
+
+    function recordsFromFolderInput(fileList) {
+      return Array.from(fileList || [])
+        .filter(isImageFile)
+        .map((file) => makeRecord(file, file.webkitRelativePath ? stripFirstSegment(file.webkitRelativePath) : file.name));
+    }
+
+    function recordsFromFileInput(fileList) {
+      return Array.from(fileList || []).filter(isImageFile).map((file) => makeRecord(file, file.name));
+    }
+
+    async function recordsFromDataTransfer(dataTransfer) {
+      const items = Array.from(dataTransfer.items || []);
+      const entries = items
+        .map((item) => (typeof item.webkitGetAsEntry === 'function' ? item.webkitGetAsEntry() : null))
+        .filter(Boolean);
+
+      if (entries.length) {
+        const records = [];
+        for (const entry of entries) await traverseEntry(entry, '', records);
+
+        if (entries.length === 1 && entries[0].isDirectory) {
+          const top = `${entries[0].name}/`;
+          records.forEach((record) => {
+            if (record.relativePath.startsWith(top)) record.relativePath = normalizePath(record.relativePath.slice(top.length));
+          });
+        }
+        return records;
+      }
+
+      return recordsFromFileInput(dataTransfer.files);
+    }
+
+    function readEntries(directoryEntry) {
+      const reader = directoryEntry.createReader();
+      const result = [];
+      return new Promise((resolve) => {
+        const readBatch = () => {
+          reader.readEntries((batch) => {
+            if (!batch.length) { resolve(result); return; }
+            result.push(...batch);
+            readBatch();
+          }, () => resolve(result));
+        };
+        readBatch();
+      });
+    }
+
+    async function traverseEntry(entry, currentPath, output) {
+      if (entry.isFile) {
+        await new Promise((resolve) => {
+          entry.file((file) => {
+            if (isImageFile(file)) {
+              const rel = currentPath ? `${currentPath}/${file.name}` : file.name;
+              output.push(makeRecord(file, rel));
+            }
+            resolve();
+          }, () => resolve());
+        });
+        return;
+      }
+
+      if (entry.isDirectory) {
+        const nextPath = currentPath ? `${currentPath}/${entry.name}` : entry.name;
+        const children = await readEntries(entry);
+        for (const child of children) await traverseEntry(child, nextPath, output);
+      }
+    }
+
+    function downloadBlob(filename, content, type) {
+      const blob = new Blob([content], { type: type || 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    function getDeletePayload() {
+      return {
+        app: 'PHOTO CLEANER',
+        version: 3,
+        createdAt: new Date().toISOString(),
+        files: getDeletedItems().map((item) => item.relativePath)
+      };
+    }
+
+    function downloadJson() {
+      const deleted = getDeletedItems();
+      if (!deleted.length) {
+        alert('삭제 예정 파일이 없습니다.');
+        return;
+      }
+      downloadBlob('photo-cleaner-delete-list.json', JSON.stringify(getDeletePayload(), null, 2), 'application/json;charset=utf-8');
+    }
+
+    function getPowerShellCommand() {
+      return `$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName Microsoft.VisualBasic
+
+function Read-CleanPath([string]$Message) {
+  $value = Read-Host $Message
+  return $value.Trim().Trim('"')
+}
+
+$jsonPath = Read-CleanPath 'photo-cleaner-delete-list.json 파일 경로를 입력하세요. 파일을 터미널로 드래그해도 됩니다'
+$root = Read-CleanPath '원본 이미지 폴더 경로를 입력하세요. 폴더를 터미널로 드래그해도 됩니다'
+
+if (-not (Test-Path -LiteralPath $jsonPath -PathType Leaf)) { throw '삭제 목록 JSON 파일을 찾을 수 없습니다.' }
+if (-not (Test-Path -LiteralPath $root -PathType Container)) { throw '원본 이미지 폴더를 찾을 수 없습니다.' }
+
+$data = Get-Content -LiteralPath $jsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
+if (-not $data.files) { throw 'JSON 안에 files 목록이 없습니다.' }
+
+$rootFull = [IO.Path]::GetFullPath($root)
+$rootPrefix = $rootFull.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+$deleted = 0
+$missing = 0
+$skipped = 0
+
+foreach ($rel in @($data.files)) {
+  $child = ([string]$rel) -replace '/', [IO.Path]::DirectorySeparatorChar
+  $target = [IO.Path]::GetFullPath((Join-Path $rootFull $child))
+
+  if (-not $target.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+    Write-Host "SKIP: $rel"
+    $skipped++
+    continue
+  }
+
+  if (Test-Path -LiteralPath $target -PathType Leaf) {
+    [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($target, 'OnlyErrorDialogs', 'SendToRecycleBin')
+    Write-Host "TRASH: $target"
+    $deleted++
+  } else {
+    Write-Host "MISSING: $target"
+    $missing++
+  }
+}
+
+Write-Host ''
+Write-Host "완료: 휴지통 이동 $deleted 개, 찾을 수 없음 $missing 개, 건너뜀 $skipped 개"
+`;
+    }
+
+    async function copyPowerShellCommand() {
+      el.psCommand.value = getPowerShellCommand();
+      el.psCommand.focus();
+      el.psCommand.select();
+      try {
+        await navigator.clipboard.writeText(el.psCommand.value);
+        alert('PowerShell 처리 명령을 복사했습니다.');
+      } catch (_) {
+        document.execCommand('copy');
+        alert('명령 창의 텍스트를 선택했습니다. Ctrl+C로 복사해 주세요.');
+      }
+    }
+
+    el.jsStatus.hidden = true;
+    el.psCommand.value = getPowerShellCommand();
+
+    el.folderInput.addEventListener('change', () => startSession(recordsFromFolderInput(el.folderInput.files)));
+    el.fileInput.addEventListener('change', () => startSession(recordsFromFileInput(el.fileInput.files)));
+
+    ['dragenter', 'dragover'].forEach((type) => {
+      window.addEventListener(type, (event) => {
+        event.preventDefault();
+        el.dropZone.classList.add('dragging');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach((type) => {
+      window.addEventListener(type, (event) => {
+        event.preventDefault();
+        if (type === 'drop') return;
+        el.dropZone.classList.remove('dragging');
+      });
+    });
+
+    window.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      el.dropZone.classList.remove('dragging');
+      const records = await recordsFromDataTransfer(event.dataTransfer);
+      startSession(records);
+    });
+
+    el.keep.addEventListener('click', () => animateDecision('keep'));
+    el.delete.addEventListener('click', () => animateDecision('delete'));
+    el.undo.addEventListener('click', undo);
+    el.reset.addEventListener('click', resetAll);
+    el.restart.addEventListener('click', resetAll);
+    el.downloadJson.addEventListener('click', downloadJson);
+    el.copyPs.addEventListener('click', copyPowerShellCommand);
+
+    el.card.addEventListener('pointerdown', (event) => {
+      if (state.index >= state.items.length) return;
+      state.gesture = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, dx: 0, dy: 0 };
+      el.card.setPointerCapture(event.pointerId);
+      el.card.style.transition = 'none';
+    });
+
+    el.card.addEventListener('pointermove', (event) => {
+      if (!state.gesture || state.gesture.pointerId !== event.pointerId) return;
+      const dx = event.clientX - state.gesture.startX;
+      const dy = event.clientY - state.gesture.startY;
+      state.gesture.dx = dx;
+      state.gesture.dy = dy;
+      if (Math.abs(dx) < 8 && Math.abs(dy) > Math.abs(dx)) return;
+      const rotate = Math.max(-9, Math.min(9, dx / 24));
+      el.card.style.transform = `translateX(${dx}px) rotate(${rotate}deg)`;
+      el.card.classList.toggle('show-delete', dx > 45);
+      el.card.classList.toggle('show-keep', dx < -45);
+    });
+
+    function finishGesture(event) {
+      if (!state.gesture || state.gesture.pointerId !== event.pointerId) return;
+      const dx = state.gesture.dx;
+      const threshold = Math.min(150, Math.max(72, el.card.clientWidth * .16));
+      state.gesture = null;
+      if (Math.abs(dx) >= threshold) {
+        animateDecision(dx > 0 ? 'delete' : 'keep');
+      } else {
+        el.card.style.transition = 'transform 140ms ease';
+        resetCardTransform();
+      }
+    }
+
+    el.card.addEventListener('pointerup', finishGesture);
+    el.card.addEventListener('pointercancel', finishGesture);
+    el.card.addEventListener('lostpointercapture', (event) => {
+      if (state.gesture && state.gesture.pointerId === event.pointerId) {
+        state.gesture = null;
+        resetCardTransform();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (el.workspace.hidden) return;
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        animateDecision('keep');
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        animateDecision('delete');
+      } else if (event.key === 'Backspace' || event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        undo();
+      }
+    });
+
+    showSection('intro');
+  })();
+  </script>
+</body>
+</html>
