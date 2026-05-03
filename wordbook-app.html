@@ -1,0 +1,105 @@
+---
+permalink: /wordbook-app.html
+---
+
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Word Book</title>
+</head>
+<body>
+  <main id="flashcard-container">
+    <button type="button" id="card">
+      <span id="card-content">준비 중...</span>
+    </button>
+
+    <p id="card-index"></p>
+
+    <div>
+      <button type="button" id="word-prev">이전</button>
+      <button type="button" id="word-next">다음</button>
+      <button type="button" id="word-shuffle">섞기</button>
+    </div>
+  </main>
+
+  <script id="word-data" type="application/json">
+  {{ site.data.words | jsonify }}
+  </script>
+
+  <script>
+  (() => {
+    const dataEl = document.getElementById('word-data');
+    const card = document.getElementById('card');
+    const cardContent = document.getElementById('card-content');
+    const indexText = document.getElementById('card-index');
+    const prevBtn = document.getElementById('word-prev');
+    const nextBtn = document.getElementById('word-next');
+    const shuffleBtn = document.getElementById('word-shuffle');
+
+    let words = [];
+
+    try {
+      const parsed = JSON.parse(dataEl?.textContent || '[]');
+      words = Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.error(error);
+    }
+
+    let currentIndex = 0;
+    let isFront = true;
+
+    function showCard() {
+      if (!words.length) {
+        cardContent.textContent = '_data/words.yml 파일을 확인해 주십니듸.';
+        indexText.textContent = '';
+        return;
+      }
+
+      const item = words[currentIndex] || {};
+      cardContent.textContent = isFront
+        ? item.word || ''
+        : item.definition || item.meaning || '';
+
+      indexText.textContent = `${currentIndex + 1} / ${words.length}`;
+    }
+
+    card.addEventListener('click', () => {
+      if (!words.length) return;
+      isFront = !isFront;
+      showCard();
+    });
+
+    prevBtn.addEventListener('click', () => {
+      if (!words.length) return;
+      currentIndex = (currentIndex - 1 + words.length) % words.length;
+      isFront = true;
+      showCard();
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (!words.length) return;
+      currentIndex = (currentIndex + 1) % words.length;
+      isFront = true;
+      showCard();
+    });
+
+    shuffleBtn.addEventListener('click', () => {
+      if (!words.length) return;
+
+      for (let i = words.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [words[i], words[j]] = [words[j], words[i]];
+      }
+
+      currentIndex = 0;
+      isFront = true;
+      showCard();
+    });
+
+    showCard();
+  })();
+  </script>
+</body>
+</html>
