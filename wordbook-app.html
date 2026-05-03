@@ -19,7 +19,7 @@ permalink: /wordbook-app.html
 
     <div>
       <button type="button" id="word-prev">이전</button>
-      <button type="button" id="word-next">다음</button>
+      <button type="button" id="word-next">뜻 보기</button>
       <button type="button" id="word-shuffle">섞기</button>
     </div>
   </main>
@@ -28,8 +28,9 @@ permalink: /wordbook-app.html
   {{ site.data.words | jsonify }}
   </script>
 
-  <script>
-  (() => {
+<script>
+(() => {
+  function initWordBook() {
     const dataEl = document.getElementById('word-data');
     const card = document.getElementById('card');
     const cardContent = document.getElementById('card-content');
@@ -38,54 +39,82 @@ permalink: /wordbook-app.html
     const nextBtn = document.getElementById('word-next');
     const shuffleBtn = document.getElementById('word-shuffle');
 
+    if (!card || !cardContent || !indexText) {
+      return;
+    }
+
     let words = [];
 
     try {
       const parsed = JSON.parse(dataEl?.textContent || '[]');
       words = Array.isArray(parsed) ? parsed : [];
     } catch (error) {
-      console.error(error);
+      console.error('Word data parse error:', error);
     }
 
     let currentIndex = 0;
     let isFront = true;
 
+    function getMeaning(item) {
+      return (
+        item.definition ||
+        item.meaning ||
+        item.korean ||
+        item.ko ||
+        '뜻이 등록되어 있지 않습니다.'
+      );
+    }
+
     function showCard() {
       if (!words.length) {
-        cardContent.textContent = '_data/words.yml 파일을 확인해 주십니듸.';
+        cardContent.textContent = '_data/words.yml 파일을 확인해 주세요.';
         indexText.textContent = '';
         return;
       }
 
       const item = words[currentIndex] || {};
+
       cardContent.textContent = isFront
         ? item.word || ''
-        : item.definition || item.meaning || '';
+        : getMeaning(item);
 
       indexText.textContent = `${currentIndex + 1} / ${words.length}`;
+
+      if (nextBtn) {
+        nextBtn.textContent = isFront ? '뜻 보기' : '다음';
+      }
     }
 
-    card.addEventListener('click', () => {
+    function flipCard() {
       if (!words.length) return;
+
       isFront = !isFront;
       showCard();
-    });
+    }
 
-    prevBtn.addEventListener('click', () => {
+    function goPrevious() {
       if (!words.length) return;
+
       currentIndex = (currentIndex - 1 + words.length) % words.length;
       isFront = true;
       showCard();
-    });
+    }
 
-    nextBtn.addEventListener('click', () => {
+    function goNext() {
       if (!words.length) return;
+
+      if (isFront) {
+        isFront = false;
+        showCard();
+        return;
+      }
+
       currentIndex = (currentIndex + 1) % words.length;
       isFront = true;
       showCard();
-    });
+    }
 
-    shuffleBtn.addEventListener('click', () => {
+    function shuffleWords() {
       if (!words.length) return;
 
       for (let i = words.length - 1; i > 0; i -= 1) {
@@ -96,10 +125,42 @@ permalink: /wordbook-app.html
       currentIndex = 0;
       isFront = true;
       showCard();
+    }
+
+    card.addEventListener('click', flipCard);
+    prevBtn?.addEventListener('click', goPrevious);
+    nextBtn?.addEventListener('click', goNext);
+    shuffleBtn?.addEventListener('click', shuffleWords);
+
+    document.addEventListener('keydown', (event) => {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+
+      if (['input', 'textarea', 'select'].includes(activeTag)) {
+        return;
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        goPrevious();
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        goNext();
+      }
     });
 
     showCard();
-  })();
-  </script>
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWordBook, { once: true });
+  } else {
+    initWordBook();
+  }
+})();
+</script>
+
+  
 </body>
 </html>
