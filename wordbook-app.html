@@ -7,160 +7,438 @@ permalink: /wordbook-app.html
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Word Book</title>
+  <title>WORD BOOK</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --wb-bg: #1f1f22;
+      --wb-fg: #ececec;
+      --wb-muted: rgba(236,236,236,.70);
+      --wb-panel: rgba(127,127,127,.10);
+      --wb-panel-2: rgba(127,127,127,.15);
+      --wb-border: rgba(127,127,127,.30);
+      --wb-accent: #4f8cff;
+      --wb-good: #2ea44f;
+      --wb-warn: #ffb86c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--wb-bg);
+      color: var(--wb-fg);
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    .app {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .panel {
+      border: 1px solid var(--wb-border);
+      border-radius: 20px;
+      padding: 24px;
+      background: var(--wb-panel);
+    }
+
+    h1 {
+      line-height: 1.2;
+      margin: 0 0 8px;
+      letter-spacing: .02em;
+    }
+
+    .muted {
+      color: var(--wb-muted);
+    }
+
+    .flashcard-wrap {
+      display: grid;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .flashcard {
+      width: 100%;
+      min-height: min(52vh, 430px);
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      border: 1px solid var(--wb-border);
+      border-radius: 18px;
+      background:
+        linear-gradient(45deg, rgba(127,127,127,.10) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(127,127,127,.10) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(127,127,127,.10) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(127,127,127,.10) 75%);
+      background-size: 24px 24px;
+      background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+      color: inherit;
+      cursor: pointer;
+      user-select: none;
+      transition: transform .12s ease, border-color .12s ease, filter .12s ease;
+    }
+
+    .flashcard:hover {
+      transform: translateY(-1px);
+      border-color: var(--wb-accent);
+      filter: brightness(1.05);
+    }
+
+    .flashcard-inner {
+      width: min(100%, 720px);
+      display: grid;
+      gap: 16px;
+      place-items: center;
+      text-align: center;
+      padding: 28px;
+      border-radius: 18px;
+      background: rgba(31,31,34,.78);
+      box-shadow: 0 18px 48px rgba(0,0,0,.30);
+    }
+
+    .card-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid var(--wb-border);
+      border-radius: 999px;
+      color: var(--wb-muted);
+      font-size: .85rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+
+    .card-content {
+      font-size: clamp(2rem, 7vw, 4.4rem);
+      font-weight: 850;
+      line-height: 1.15;
+      word-break: keep-all;
+      white-space: pre-line;
+    }
+
+    .card-content.meaning {
+      font-size: clamp(1.35rem, 4.5vw, 2.4rem);
+      font-weight: 750;
+    }
+
+    .card-hint {
+      margin: 0;
+      color: var(--wb-muted);
+      font-size: .95rem;
+    }
+
+    .status-row {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .index-text {
+      margin: 0;
+      font-weight: 800;
+    }
+
+    .keyboard-help {
+      margin: 0;
+      color: var(--wb-muted);
+      font-size: .95rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    button {
+      border: 1px solid var(--wb-border);
+      border-radius: 999px;
+      padding: 10px 18px;
+      background: var(--wb-panel-2);
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      line-height: 1.2;
+      transition: transform .12s ease, filter .12s ease, border-color .12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+      border-color: var(--wb-accent);
+    }
+
+    .primary {
+      background: var(--wb-accent);
+      color: white;
+      border-color: transparent;
+      font-weight: 800;
+    }
+
+    .secondary {
+      background: var(--wb-panel-2);
+    }
+
+    .empty {
+      border-left: 4px solid var(--wb-warn);
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255,184,108,.12);
+    }
+
+    @media (max-width: 680px) {
+      .app {
+        padding: 14px;
+      }
+
+      .panel {
+        padding: 16px;
+      }
+
+      .flashcard {
+        min-height: 46vh;
+        padding: 18px;
+      }
+
+      .flashcard-inner {
+        padding: 20px;
+      }
+
+      .status-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .controls {
+        align-items: stretch;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
+
 <body>
-  <main id="flashcard-container">
-    <button type="button" id="card">
-      <span id="card-content">준비 중...</span>
-    </button>
+  <main class="app">
+    <section class="panel">
+      <h1>WORD BOOK</h1>
+      <p class="muted">
+        저장한 단어를 플래시카드처럼 넘기면서 외울 수 있습니다.
+      </p>
 
-    <p id="card-index"></p>
+      <div class="flashcard-wrap">
+        <button type="button" id="card" class="flashcard" aria-label="카드 뒤집기">
+          <span class="flashcard-inner">
+            <span id="card-label" class="card-label">READY</span>
+            <span id="card-content" class="card-content">준비 중...</span>
+            <span id="card-hint" class="card-hint">카드를 클릭하면 뜻을 볼 수 있습니다.</span>
+          </span>
+        </button>
 
-    <div>
-      <button type="button" id="word-prev">이전</button>
-      <button type="button" id="word-next">뜻 보기</button>
-      <button type="button" id="word-shuffle">섞기</button>
-    </div>
+        <div class="status-row">
+          <p id="card-index" class="index-text">0 / 0</p>
+          <p class="keyboard-help">← 이전 · → 뜻 보기 / 다음</p>
+        </div>
+
+        <div class="controls">
+          <button type="button" id="word-prev" class="secondary">← 이전</button>
+          <button type="button" id="word-next" class="primary">뜻 보기</button>
+          <button type="button" id="word-shuffle" class="secondary">섞기</button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <script id="word-data" type="application/json">
-  {{ site.data.words | jsonify }}
+    {{ site.data.words | jsonify }}
   </script>
 
-<script>
-(() => {
-  function initWordBook() {
-    const dataEl = document.getElementById('word-data');
-    const card = document.getElementById('card');
-    const cardContent = document.getElementById('card-content');
-    const indexText = document.getElementById('card-index');
-    const prevBtn = document.getElementById('word-prev');
-    const nextBtn = document.getElementById('word-next');
-    const shuffleBtn = document.getElementById('word-shuffle');
+  <script>
+    (() => {
+      const dataEl = document.getElementById('word-data');
+      const card = document.getElementById('card');
+      const cardLabel = document.getElementById('card-label');
+      const cardContent = document.getElementById('card-content');
+      const cardHint = document.getElementById('card-hint');
+      const indexText = document.getElementById('card-index');
+      const prevBtn = document.getElementById('word-prev');
+      const nextBtn = document.getElementById('word-next');
+      const shuffleBtn = document.getElementById('word-shuffle');
 
-    if (!card || !cardContent || !indexText) {
-      return;
-    }
+      let words = [];
+      let currentIndex = 0;
+      let isFront = true;
 
-    let words = [];
+      function postHeight() {
+        window.requestAnimationFrame(() => {
+          window.parent.postMessage(
+            {
+              type: 'wordbook-height',
+              height: document.documentElement.scrollHeight
+            },
+            window.location.origin
+          );
+        });
+      }
 
-    try {
-      const parsed = JSON.parse(dataEl?.textContent || '[]');
-      words = Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.error('Word data parse error:', error);
-    }
+      function parseWords() {
+        try {
+          const parsed = JSON.parse(dataEl?.textContent || '[]');
+          words = Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          console.error('Word data parse error:', error);
+          words = [];
+        }
+      }
 
-    let currentIndex = 0;
-    let isFront = true;
+      function getMeaning(item) {
+        return (
+          item.definition ||
+          item.meaning ||
+          item.korean ||
+          item.ko ||
+          '뜻이 등록되어 있지 않습니다.'
+        );
+      }
 
-    function getMeaning(item) {
-      return (
-        item.definition ||
-        item.meaning ||
-        item.korean ||
-        item.ko ||
-        '뜻이 등록되어 있지 않습니다.'
-      );
-    }
-
-    function showCard() {
-      if (!words.length) {
+      function renderEmpty() {
+        cardLabel.textContent = 'EMPTY';
         cardContent.textContent = '_data/words.yml 파일을 확인해 주세요.';
-        indexText.textContent = '';
-        return;
+        cardContent.classList.remove('meaning');
+        cardHint.textContent = '단어 데이터가 비어 있습니다.';
+        cardHint.classList.add('empty');
+        indexText.textContent = '0 / 0';
+        nextBtn.textContent = '뜻 보기';
+        postHeight();
       }
 
-      const item = words[currentIndex] || {};
+      function renderCard() {
+        if (!words.length) {
+          renderEmpty();
+          return;
+        }
 
-      cardContent.textContent = isFront
-        ? item.word || ''
-        : getMeaning(item);
+        const item = words[currentIndex] || {};
+        const word = item.word || '';
+        const meaning = getMeaning(item);
 
-      indexText.textContent = `${currentIndex + 1} / ${words.length}`;
+        cardLabel.textContent = isFront ? 'ENGLISH' : 'KOREAN';
+        cardContent.textContent = isFront ? word : meaning;
+        cardContent.classList.toggle('meaning', !isFront);
 
-      if (nextBtn) {
-        nextBtn.textContent = isFront ? '뜻 보기' : '다음';
-      }
-    }
+        cardHint.classList.remove('empty');
+        cardHint.textContent = isFront
+          ? '카드를 클릭하거나 → 키를 누르면 뜻을 볼 수 있습니다.'
+          : '→ 키를 한 번 더 누르면 다음 단어로 넘어갑니다.';
 
-    function flipCard() {
-      if (!words.length) return;
+        indexText.textContent = `${currentIndex + 1} / ${words.length}`;
+        nextBtn.textContent = isFront ? '뜻 보기' : '다음 →';
 
-      isFront = !isFront;
-      showCard();
-    }
-
-    function goPrevious() {
-      if (!words.length) return;
-
-      currentIndex = (currentIndex - 1 + words.length) % words.length;
-      isFront = true;
-      showCard();
-    }
-
-    function goNext() {
-      if (!words.length) return;
-
-      if (isFront) {
-        isFront = false;
-        showCard();
-        return;
+        postHeight();
       }
 
-      currentIndex = (currentIndex + 1) % words.length;
-      isFront = true;
-      showCard();
-    }
-
-    function shuffleWords() {
-      if (!words.length) return;
-
-      for (let i = words.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [words[i], words[j]] = [words[j], words[i]];
+      function flipCard() {
+        if (!words.length) return;
+        isFront = !isFront;
+        renderCard();
       }
 
-      currentIndex = 0;
-      isFront = true;
-      showCard();
-    }
-
-    card.addEventListener('click', flipCard);
-    prevBtn?.addEventListener('click', goPrevious);
-    nextBtn?.addEventListener('click', goNext);
-    shuffleBtn?.addEventListener('click', shuffleWords);
-
-    document.addEventListener('keydown', (event) => {
-      const activeTag = document.activeElement?.tagName?.toLowerCase();
-
-      if (['input', 'textarea', 'select'].includes(activeTag)) {
-        return;
+      function goPrevious() {
+        if (!words.length) return;
+        currentIndex = (currentIndex - 1 + words.length) % words.length;
+        isFront = true;
+        renderCard();
       }
 
-      if (event.key === 'ArrowLeft') {
-        event.preventDefault();
-        goPrevious();
+      function goNext() {
+        if (!words.length) return;
+
+        if (isFront) {
+          isFront = false;
+          renderCard();
+          return;
+        }
+
+        currentIndex = (currentIndex + 1) % words.length;
+        isFront = true;
+        renderCard();
       }
 
-      if (event.key === 'ArrowRight') {
-        event.preventDefault();
-        goNext();
+      function shuffleWords() {
+        if (!words.length) return;
+
+        for (let i = words.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [words[i], words[j]] = [words[j], words[i]];
+        }
+
+        currentIndex = 0;
+        isFront = true;
+        renderCard();
       }
-    });
 
-    showCard();
-  }
+      function handleArrowKey(key) {
+        if (key === 'ArrowLeft') {
+          goPrevious();
+          return true;
+        }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initWordBook, { once: true });
-  } else {
-    initWordBook();
-  }
-})();
-</script>
+        if (key === 'ArrowRight') {
+          goNext();
+          return true;
+        }
 
-  
+        return false;
+      }
+
+      card.addEventListener('click', flipCard);
+      prevBtn.addEventListener('click', goPrevious);
+      nextBtn.addEventListener('click', goNext);
+      shuffleBtn.addEventListener('click', shuffleWords);
+
+      document.addEventListener('keydown', (event) => {
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+
+        if (['input', 'textarea', 'select'].includes(activeTag)) {
+          return;
+        }
+
+        if (handleArrowKey(event.key)) {
+          event.preventDefault();
+        }
+      });
+
+      window.addEventListener('message', (event) => {
+        if (event.origin !== window.location.origin) return;
+        if (!event.data || event.data.type !== 'wordbook-key') return;
+
+        handleArrowKey(event.data.key);
+      });
+
+      window.addEventListener('resize', postHeight);
+
+      parseWords();
+      renderCard();
+    })();
+  </script>
 </body>
 </html>
