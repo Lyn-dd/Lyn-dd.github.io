@@ -347,8 +347,6 @@ permalink: /wordbook-app.html
 
         cardHint.classList.remove('empty');
         cardHint.textContent = isFront
-          ? '카드를 클릭하거나 → 키를 누르면 뜻을 볼 수 있습니다.'
-          : '→ 키를 한 번 더 누르면 다음 단어로 넘어갑니다.';
 
         indexText.textContent = `${currentIndex + 1} / ${words.length}`;
         nextBtn.textContent = isFront ? '뜻 보기' : '다음 →';
