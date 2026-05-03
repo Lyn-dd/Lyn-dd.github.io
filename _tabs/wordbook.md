@@ -17,12 +17,18 @@ permalink: /wordbook/
 </div>
 
 <script>
-  // Jekyll이 YAML 데이터를 JS 배열로 변환해줍니듸.
-  const words = {{ site.data.words | jsonify }};
+  // 데이터가 없을 경우를 대비해 빈 배열 '[]'을 기본값으로 설정합니듸.
+  const words = {{ site.data.words | jsonify | default: '[]' }};
   let currentIndex = 0;
   let isFront = true;
 
   function updateCard() {
+    // 데이터가 아예 없을 경우에 대한 예외 처리입니듸.
+    if (!words || words.length === 0) {
+      document.getElementById('card-content').innerText = "_data/words.yml 파일을 확인해 주십니듸.";
+      return;
+    }
+
     const cardContent = document.getElementById('card-content');
     const indexText = document.getElementById('card-index');
     
@@ -35,8 +41,10 @@ permalink: /wordbook/
   }
 
   function flipCard() {
-    isFront = !isFront;
-    updateCard();
+    if (words.length > 0) {
+      isFront = !isFront;
+      updateCard();
+    }
   }
 
   function nextCard() {
@@ -56,12 +64,13 @@ permalink: /wordbook/
   }
 
   function shuffleCards() {
-    words.sort(() => Math.random() - 0.5);
-    currentIndex = 0;
-    isFront = true;
-    updateCard();
+    if (words.length > 0) {
+      words.sort(() => Math.random() - 0.5);
+      currentIndex = 0;
+      isFront = true;
+      updateCard();
+    }
   }
 
-  // 초기 로드
   window.onload = updateCard;
 </script>
