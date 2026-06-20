@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2시간 단위 시간 로거 및 일기장</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons (아이콘 표시용) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* 토스트 알림 슬라이드 애니메이션 */
+    @keyframes slideUp {
+      from {
+        transform: translateY(100px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    @keyframes slideDown {
+      from {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateY(100px);
+        opacity: 0;
+      }
+    }
+    .toast-show {
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .toast-hide {
+      animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    /* 스크롤바 커스텀 */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 p-4 flex flex-col items-center justify-center min-h-screen">
+
+  <!-- 블로그 사이드바용 UI 컨테이너 (실제 Jekyll 블로그 사이드바 템플릿에 맞게 너비 조정 가능) -->
+  <div class="w-full max-w-sm bg-white rounded-2xl shadow-md border border-gray-100 p-5 font-sans transition-all duration-300 hover:shadow-lg">
+    
+    <!-- 헤더 영역 -->
+    <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+      <div class="flex items-center space-x-2">
+        <span class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+          <i data-lucide="clock" class="w-5 h-5"></i>
+        </span>
+        <h3 class="text-base font-bold text-gray-800">오늘의 일기 & 로거</h3>
+      </div>
+      <span id="timerBadge" class="hidden px-2.5 py-0.5 text-xs font-semibold bg-red-50 text-red-600 rounded-full animate-pulse">
+        기록 중
+      </span>
+    </div>
+
+    <!-- 타이머 모니터 및 컨트롤러 -->
+    <div class="my-4 bg-gray-50 rounded-xl p-4 text-center">
+      <div class="text-xs text-gray-500 font-medium mb-1">진행 시간</div>
+      <div id="timerDisplay" class="text-2xl font-mono font-bold text-gray-700 tracking-wider">00:00:00</div>
+      
+      <!-- 실시간 게이지 바 -->
+      <div class="w-full bg-gray-200 h-1.5 rounded-full mt-3 overflow-hidden">
+        <div id="progressBar" class="bg-indigo-600 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+      </div>
+      <div class="flex justify-between text-[10px] text-gray-400 mt-1">
+        <span>시작</span>
+        <span>목표 (2시간)</span>
+      </div>
+
+      <!-- 제어 버튼 -->
+      <button id="toggleBtn" class="w-full mt-4 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm transition-all duration-200 shadow-sm flex items-center justify-center space-x-2">
+        <i data-lucide="play" class="w-4 h-4"></i>
+        <span id="toggleBtnText">타이머 시작</span>
+      </button>
+    </div>
+
+    <!-- 일지 기록 리스트 영역 -->
+    <div class="mt-4">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-xs font-bold text-gray-500">오늘의 기록 목록</span>
+        <span id="logCount" class="text-[11px] px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md font-semibold">0개</span>
+      </div>
+
+      <div id="logContainer" class="custom-scrollbar max-h-48 overflow-y-auto space-y-2 border border-gray-100 rounded-xl p-2 bg-gray-50/50 min-h-[100px] flex flex-col justify-start">
+        <!-- 기록이 비었을 때 메시지 -->
+        <div id="emptyMessage" class="m-auto text-center py-6 text-xs text-gray-400">
+          <i data-lucide="clipboard-list" class="w-8 h-8 mx-auto mb-1.5 text-gray-300"></i>
+          기록된 일과가 없습니다.<br>하루를 조각내어 기록해보세요!
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단 유틸리티 기능 -->
+    <div class="mt-4 pt-3 border-t border-gray-100 flex space-x-2">
+      <button id="exportBtn" class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-xs transition-colors flex items-center justify-center space-x-1 shadow-sm">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+        <span>기록 내보내기 (.txt)</span>
+      </button>
+      <button id="clearBtn" class="py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium rounded-lg text-xs transition-colors flex items-center justify-center space-x-1">
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        <span>비우기</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- 카카오톡 스타일 토스트 알림창 (부드럽게 올라옴) -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 w-80 bg-[#FFEB3B] text-gray-900 rounded-2xl shadow-xl border border-yellow-300 p-4 hidden z-50 transition-all duration-300">
+    <div class="flex items-start space-x-3">
+      <!-- 노란 배경 어울리는 메신저 느낌 아이콘 -->
+      <div class="bg-yellow-600/10 p-2 rounded-xl text-yellow-800">
+        <i data-lucide="message-square" class="w-5 h-5"></i>
+      </div>
+      <div class="flex-1">
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-xs font-bold text-yellow-900">시간 관리 비서</span>
+          <button id="closeToastBtn" class="text-yellow-800 hover:text-black transition-colors">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <p id="toastMessage" class="text-xs text-gray-800 font-medium leading-relaxed">
+          블로그에 방문해주셨군요! 규칙적인 기록을 위해 지금 바로 시간 로깅 타이머를 작동시켜 보는 건 어떨까요?
+        </p>
+        
+        <!-- 토스트 내 인터랙션 영역 (상황에 따라 동적 노출) -->
+        <div id="toastActionArea" class="mt-3 flex space-x-2">
+          <button id="toastConfirmBtn" class="flex-1 bg-gray-900 hover:bg-black text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors">
+            타이머 시작하기
+          </button>
+        </div>
+
+        <!-- 텍스트 입력 로깅 폼 (타이머가 멈추거나 2시간이 지났을 때 토스트 내 활성화) -->
+        <div id="logInputArea" class="mt-3 hidden">
+          <label id="inputPrompt" class="block text-xs font-bold text-gray-900 mb-1.5">무엇을 하셨나요?</label>
+          <div class="flex space-x-1.5">
+            <input type="text" id="logTextInput" class="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-yellow-400 bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-900 placeholder-gray-400" placeholder="예: 블로그 포스팅 초안 작성">
+            <button id="submitLogBtn" class="bg-gray-900 hover:bg-black text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors shrink-0">
+              기록
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Lucide 아이콘 렌더링 초기화
+    lucide.createIcons();
+
+    //--- 환경 설정 상수 ---
+    const TWO_HOURS_MS = 2 * 60 * 60 * 1000; // 2시간 = 7,200,000ms (실 서비스용)
+    // 테스트 디버깅용으로 짧게 설정하려면 아래 주석을 사용하세요.
+    // const TWO_HOURS_MS = 10 * 1000; // 테스트용 10초
+
+    //--- 로컬 스토리지 키 명세 ---
+    const STORAGE_KEYS = {
+      IS_RUNNING: 'timeLogger_isRunning',
+      START_TIME: 'timeLogger_startTime',
+      TODAY_LOGS: 'timeLogger_todayLogs'
+    };
+
+    //--- 상태 변수 ---
+    let isRunning = false;
+    let startTime = null;
+    let todayLogs = [];
+    let timerInterval = null;
+
+    //--- DOM 엘리먼트 추출 ---
+    const timerDisplay = document.getElementById('timerDisplay');
+    const progressBar = document.getElementById('progressBar');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const toggleBtnText = document.getElementById('toggleBtnText');
+    const timerBadge = document.getElementById('timerBadge');
+    
+    const logContainer = document.getElementById('logContainer');
+    const emptyMessage = document.getElementById('emptyMessage');
+    const logCount = document.getElementById('logCount');
+    
+    const exportBtn = document.getElementById('exportBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    
+    const toastNotification = document.getElementById('toastNotification');
+    const toastMessage = document.getElementById('toastMessage');
+    const closeToastBtn = document.getElementById('closeToastBtn');
+    const toastActionArea = document.getElementById('toastActionArea');
+    const toastConfirmBtn = document.getElementById('toastConfirmBtn');
+    
+    const logInputArea = document.getElementById('logInputArea');
+    const inputPrompt = document.getElementById('inputPrompt');
+    const logTextInput = document.getElementById('logTextInput');
+    const submitLogBtn = document.getElementById('submitLogBtn');
+
+    // 임시 보관용 종료 시각 (기록 전까지 보존)
+    let pendingEndTime = null;
+
+    //--- 초기 구동 로직 ---
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      renderLogs();
+      updateTimerUI();
+
+      if (isRunning) {
+        startTimerInterval();
+      }
+
+      // 페이지 로드 3초 후 토스트 알림 조건부 노출 (이미 작동 중이지 않을 때 권유 목적으로 띄움)
+      setTimeout(() => {
+        if (!isRunning && !localStorage.getItem('timeLogger_welcomeShown')) {
+          showToast({
+            message: "안녕하세요! 규칙적인 시간 조각 기록을 위해 타이머를 시작해보세요.",
+            actionType: 'start'
+          });
+          localStorage.setItem('timeLogger_welcomeShown', 'true');
+        }
+      }, 3000);
+    });
+
+    //--- 상태 불러오기 & 저장 ---
+    function loadState() {
+      isRunning = localStorage.getItem(STORAGE_KEYS.IS_RUNNING) === 'true';
+      const storedStart = localStorage.getItem(STORAGE_KEYS.START_TIME);
+      startTime = storedStart ? parseInt(storedStart, 10) : null;
+      
+      const storedLogs = localStorage.getItem(STORAGE_KEYS.TODAY_LOGS);
+      todayLogs = storedLogs ? JSON.parse(storedLogs) : [];
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEYS.IS_RUNNING, isRunning);
+      if (startTime) {
+        localStorage.setItem(STORAGE_KEYS.START_TIME, startTime);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.START_TIME);
+      }
+      localStorage.setItem(STORAGE_KEYS.TODAY_LOGS, JSON.stringify(todayLogs));
+    }
+
+    //--- 타이머 제어 함수 ---
+    function startTimer() {
+      isRunning = true;
+      startTime = Date.now();
+      saveState();
+      
+      updateTimerUI();
+      startTimerInterval();
+      hideToast();
+    }
+
+    function stopTimer(forcedExpiry = false) {
+      if (!isRunning) return;
+      
+      clearInterval(timerInterval);
+      pendingEndTime = Date.now();
+      
+      // 경과 시간 계산
+      const elapsedMs = pendingEndTime - startTime;
+      const elapsedMinutes = Math.round(elapsedMs / 1000 / 60);
+      
+      // 상태값 초기화 준비
+      isRunning = false;
+      startTime = null;
+      saveState();
+      updateTimerUI();
+
+      // 토스트 알림창 활성화하여 질문하기
+      if (forcedExpiry) {
+        // 2시간이 모두 경과된 상태
+        showToast({
+          message: "⌛ 2시간이 경과되었습니다!",
+          promptText: "지난 2시간 동안 무엇을 하셨나요? 기록을 남겨보세요.",
+          actionType: 'input'
+        });
+      } else {
+        // 중간에 직접 멈춘 상태
+        let durationStr = `${elapsedMinutes}분`;
+        if (elapsedMinutes >= 60) {
+          const hrs = Math.floor(elapsedMinutes / 60);
+          const mins = elapsedMinutes % 60;
+          durationStr = mins > 0 ? `${hrs}시간 ${mins}분` : `${hrs}시간`;
+        }
+        
+        showToast({
+          message: `⏱️ 타이머가 중지되었습니다. (${durationStr} 경과)`,
+          promptText: `${durationStr} 동안 무엇을 하셨습니까?`,
+          actionType: 'input'
+        });
+      }
+    }
+
+    //--- 타이머 계산 및 UI 갱신 ---
+    function startTimerInterval() {
+      if (timerInterval) clearInterval(timerInterval);
+      
+      // 1초 단위 업데이트
+      timerInterval = setInterval(tick, 1000);
+      tick(); // 즉시 한 번 작동
+    }
+
+    function tick() {
+      if (!isRunning || !startTime) {
+        clearInterval(timerInterval);
+        return;
+      }
+
+      const elapsedMs = Date.now() - startTime;
+
+      // 2시간 만료 조건 체크
+      if (elapsedMs >= TWO_HOURS_MS) {
+        stopTimer(true);
+        return;
+      }
+
+      updateProgressUI(elapsedMs);
+    }
+
+    function updateProgressUI(elapsedMs) {
+      // 시간 변환 HH:MM:SS
+      const totalSec = Math.floor(elapsedMs / 1000);
+      const hrs = Math.floor(totalSec / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+
+      const formatted = [
+        String(hrs).padStart(2, '0'),
+        String(mins).padStart(2, '0'),
+        String(secs).padStart(2, '0')
+      ].join(':');
+
+      timerDisplay.textContent = formatted;
+
+      // 진행 게이지 업데이트 (2시간 대비 %)
+      const percent = Math.min((elapsedMs / TWO_HOURS_MS) * 100, 100);
+      progressBar.style.width = `${percent}%`;
+    }
+
+    function updateTimerUI() {
+      if (isRunning) {
+        toggleBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+        toggleBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+        toggleBtnText.textContent = "타이머 멈춤";
+        timerBadge.classList.remove('hidden');
+        
+        // 아이콘 교체
+        const icon = toggleBtn.querySelector('i');
+        if (icon) {
+          icon.setAttribute('data-lucide', 'square');
+          lucide.createIcons();
+        }
+      } else {
+        toggleBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+        toggleBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+        toggleBtnText.textContent = "타이머 시작";
+        timerBadge.classList.add('hidden');
+        
+        timerDisplay.textContent = "00:00:00";
+        progressBar.style.width = "0%";
+
+        const icon = toggleBtn.querySelector('i');
+        if (icon) {
+          icon.setAttribute('data-lucide', 'play');
+          lucide.createIcons();
+        }
+      }
+    }
+
+    //--- 사용자 Throttling 방지 보정 이벤트 처리 ---
+    // 백그라운드 전환 후 복귀 시 절대 시간 기준으로 동기화 보정
+    const syncEvents = ['visibilitychange', 'focus', 'mousemove', 'touchstart'];
+    syncEvents.forEach(evt => {
+      window.addEventListener(evt, () => {
+        if (isRunning && startTime) {
+          tick(); 
+        }
+      });
+    });
+
+    //--- 토스트 알림 관리 ---
+    function showToast({ message, promptText = "", actionType = 'start' }) {
+      toastMessage.textContent = message;
+      
+      // 토스트 상태별 구성 변경
+      if (actionType === 'start') {
+        toastActionArea.classList.remove('hidden');
+        logInputArea.classList.add('hidden');
+      } else if (actionType === 'input') {
+        toastActionArea.classList.add('hidden');
+        logInputArea.classList.remove('hidden');
+        inputPrompt.textContent = promptText;
+        logTextInput.value = "";
+        setTimeout(() => logTextInput.focus(), 300); // 부드러운 인풋 포커스
+      } else {
+        toastActionArea.classList.add('hidden');
+        logInputArea.classList.add('hidden');
+      }
+
+      toastNotification.classList.remove('hidden', 'toast-hide');
+      toastNotification.classList.add('toast-show');
+    }
+
+    function hideToast() {
+      if (toastNotification.classList.contains('toast-show')) {
+        toastNotification.classList.remove('toast-show');
+        toastNotification.classList.add('toast-hide');
+        // 애니메이션 끝나고 실제 숨김
+        setTimeout(() => {
+          toastNotification.classList.add('hidden');
+        }, 400);
+      }
+    }
+
+    //--- 기록 추가 및 보존 ---
+    function submitLoggedContent() {
+      const content = logTextInput.value.trim();
+      if (!content) {
+        // 알림창 대신 인풋 가벼운 쉐이크 이펙트 등으로 유도 가능
+        logTextInput.classList.add('border-red-500');
+        setTimeout(() => logTextInput.classList.remove('border-red-500'), 1000);
+        return;
+      }
+
+      // 시간 포맷 생성: [시작시간~종료시간]
+      const startObj = new Date(startTime ? startTime : (pendingEndTime - 1000));
+      const endObj = new Date(pendingEndTime || Date.now());
+
+      const formatTime = (date) => {
+        const hh = String(date.getHours()).padStart(2, '0');
+        const mm = String(date.getMinutes()).padStart(2, '0');
+        return `${hh}:${mm}`;
+      };
+
+      const logString = `[${formatTime(startObj)}~${formatTime(endObj)}] ${content}`;
+      
+      // 배열에 추가 및 갱신
+      todayLogs.push(logString);
+      saveState();
+      renderLogs();
+      
+      // 초기화
+      pendingEndTime = null;
+      hideToast();
+    }
+
+    //--- 로그 렌더링 함수 ---
+    function renderLogs() {
+      // 기존 목록 비우기 (메시지 보존)
+      const logItems = logContainer.querySelectorAll('.log-item');
+      logItems.forEach(item => item.remove());
+
+      if (todayLogs.length === 0) {
+        emptyMessage.classList.remove('hidden');
+        logCount.textContent = "0개";
+      } else {
+        emptyMessage.classList.add('hidden');
+        logCount.textContent = `${todayLogs.length}개`;
+
+        todayLogs.forEach((logText, idx) => {
+          const item = document.createElement('div');
+          item.className = "log-item flex items-start space-x-2 p-2.5 bg-white border border-gray-150 rounded-lg text-xs text-gray-700 shadow-2xs hover:border-gray-300 transition-colors group";
+          
+          // 체크 아이콘
+          const iconSpan = document.createElement('span');
+          iconSpan.className = "text-emerald-500 mt-0.5 shrink-0";
+          iconSpan.innerHTML = '<i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>';
+          
+          const textSpan = document.createElement('span');
+          textSpan.className = "flex-1 leading-relaxed break-all";
+          textSpan.textContent = logText;
+
+          // 개별 삭제 버튼
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = "text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 ml-1 shrink-0";
+          deleteBtn.innerHTML = '<i data-lucide="trash" class="w-3.5 h-3.5"></i>';
+          deleteBtn.addEventListener('click', () => deleteSingleLog(idx));
+
+          item.appendChild(iconSpan);
+          item.appendChild(textSpan);
+          item.appendChild(deleteBtn);
+          logContainer.appendChild(item);
+        });
+
+        // 스크롤 항상 밑으로
+        logContainer.scrollTop = logContainer.scrollHeight;
+      }
+      lucide.createIcons();
+    }
+
+    function deleteSingleLog(index) {
+      todayLogs.splice(index, 1);
+      saveState();
+      renderLogs();
+    }
+
+    //--- 파일 내보내기 & 리셋 ---
+    function exportLogs() {
+      if (todayLogs.length === 0) {
+        showToast({
+          message: "내보낼 기록이 존재하지 않습니다. 먼저 타이머를 구동하여 일과를 기록해 보세요!",
+          actionType: 'none'
+        });
+        setTimeout(hideToast, 3000);
+        return;
+      }
+
+      const today = new Date();
+      const month = today.getMonth() + 1;
+      const date = today.getDate();
+      const fileName = `${month}_${date}.txt`;
+
+      // 텍스트 파일 구조화
+      const titleLine = `=== 오늘의 시간 기록 & 일기장 (${today.getFullYear()}년 ${month}월 ${date}일) ===\n\n`;
+      const fileContent = titleLine + todayLogs.join('\n');
+
+      // 다운로드 트리거
+      const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8;' });
+      const link = document.createElement("a");
+      
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 내보내기 대성공 후 스토리지 및 로컬 상태 비우기 규칙 적용
+        setTimeout(() => {
+          todayLogs = [];
+          saveState();
+          renderLogs();
+
+          showToast({
+            message: `💾 '${fileName}' 파일로 안전하게 기록이 내보내졌습니다! 오늘의 기록 리스트가 리셋되었습니다.`,
+            actionType: 'none'
+          });
+          setTimeout(hideToast, 4000);
+        }, 500);
+      }
+    }
+
+    function clearAllLogs() {
+      // 윈도우 confirm 대신 직관적인 커스텀 토스트로 동작 유도 (iframe 제한 대응)
+      showToast({
+        message: "⚠️ 정말로 오늘의 기록을 모두 삭제하고 비우시겠습니까? (이 작업은 되돌릴 수 없습니다)",
+        actionType: 'none'
+      });
+      
+      // 빠른 확인/취소 대체를 위해 일시적으로 토스트 액션 부분 노출 변경
+      toastActionArea.innerHTML = `
+        <button id="realClearBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors">예, 삭제합니다</button>
+        <button id="cancelClearBtn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-medium py-1.5 px-3 rounded-lg transition-colors">취소</button>
+      `;
+      toastActionArea.classList.remove('hidden');
+
+      document.getElementById('realClearBtn').addEventListener('click', () => {
+        todayLogs = [];
+        saveState();
+        renderLogs();
+        hideToast();
+        resetToastButtons();
+      });
+
+      document.getElementById('cancelClearBtn').addEventListener('click', () => {
+        hideToast();
+        resetToastButtons();
+      });
+    }
+
+    function resetToastButtons() {
+      // 기본 토스트 액션 구조로 복구
+      toastActionArea.innerHTML = `
+        <button id="toastConfirmBtn" class="flex-1 bg-gray-900 hover:bg-black text-white text-xs font-bold py-1.5 px-3 rounded-lg transition-colors">
+          타이머 시작하기
+        </button>
+      `;
+      document.getElementById('toastConfirmBtn').addEventListener('click', () => {
+        startTimer();
+      });
+    }
+
+    //--- 이벤트 리스너 취합 ---
+    toggleBtn.addEventListener('click', () => {
+      if (isRunning) {
+        stopTimer(false);
+      } else {
+        startTimer();
+      }
+    });
+
+    toastConfirmBtn.addEventListener('click', () => {
+      startTimer();
+    });
+
+    closeToastBtn.addEventListener('click', hideToast);
+
+    submitLogBtn.addEventListener('click', submitLoggedContent);
+
+    logTextInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        submitLoggedContent();
+      }
+    });
+
+    exportBtn.addEventListener('click', exportLogs);
+    clearBtn.addEventListener('click', clearAllLogs);
+
+  </script>
+</body>
+</html>
