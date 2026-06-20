@@ -62,9 +62,15 @@
         </span>
         <h3 class="text-base font-bold text-zinc-100">오늘의 일기 & 로거</h3>
       </div>
-      <span id="timerBadge" class="hidden px-2.5 py-0.5 text-xs font-semibold bg-red-950/50 text-red-400 rounded-full border border-red-900/50 animate-pulse">
-        기록 중
-      </span>
+      <div class="flex items-center space-x-2">
+        <!-- 데스크톱 알림 활성화/비활성화 버튼 -->
+        <button id="notiBtn" class="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 rounded-lg border border-zinc-700/50 transition-colors" title="데스크톱 알림 설정">
+          <i data-lucide="bell-off" class="w-4 h-4"></i>
+        </button>
+        <span id="timerBadge" class="hidden px-2.5 py-0.5 text-xs font-semibold bg-red-950/50 text-red-400 rounded-full border border-red-900/50 animate-pulse">
+          기록 중
+        </span>
+      </div>
     </div>
 
     <!-- 타이머 모니터 및 컨트롤러 -->
@@ -183,6 +189,7 @@
     const toggleBtn = document.getElementById('toggleBtn');
     const toggleBtnText = document.getElementById('toggleBtnText');
     const timerBadge = document.getElementById('timerBadge');
+    const notiBtn = document.getElementById('notiBtn');
     
     const logContainer = document.getElementById('logContainer');
     const emptyMessage = document.getElementById('emptyMessage');
@@ -210,6 +217,7 @@
       loadState();
       renderLogs();
       updateTimerUI();
+      updateNotiBtnUI();
 
       if (isRunning) {
         startTimerInterval();
@@ -218,10 +226,12 @@
       // 페이지 로드 3초 후 토스트 알림 조건부 노출 (이미 작동 중이지 않을 때 권유 목적으로 띄움)
       setTimeout(() => {
         if (!isRunning && !localStorage.getItem('timeLogger_welcomeShown')) {
+          const msg = "안녕하세요! 규칙적인 시간 조각 기록을 위해 타이머를 시작해보세요.";
           showToast({
-            message: "안녕하세요! 규칙적인 시간 조각 기록을 위해 타이머를 시작해보세요.",
+            message: msg,
             actionType: 'start'
           });
+          showSystemNotification("시간 관리 비서", msg, 'start');
           localStorage.setItem('timeLogger_welcomeShown', 'true');
         }
       }, 3000);
@@ -247,6 +257,52 @@
       localStorage.setItem(STORAGE_KEYS.TODAY_LOGS, JSON.stringify(todayLogs));
     }
 
+    //--- 데스크톱 바탕화면 알림 연동 함수 ---
+    function showSystemNotification(title, body, actionType = 'input', promptText = "") {
+      if (!("Notification" in window)) return;
+      
+      if (Notification.permission === "granted") {
+        const notification = new Notification(title, {
+          body: body,
+          icon: 'https://cdn-icons-png.flaticon.com/512/2088/2088617.png' // 시각적 종 모양 아이콘
+        });
+        
+        // 데스크톱 알림을 클릭하면 브라우저 탭을 전면으로 가져오며 입력 모달 실행
+        notification.onclick = function() {
+          window.focus();
+          showToast({
+            message: title,
+            promptText: promptText || body,
+            actionType: actionType
+          });
+          notification.close();
+        };
+      }
+    }
+
+    // 데스크톱 알림 아이콘 UI 변경 함수
+    function updateNotiBtnUI() {
+      if (!("Notification" in window)) {
+        notiBtn.classList.add('hidden');
+        return;
+      }
+      
+      const icon = notiBtn.querySelector('i');
+      if (Notification.permission === "granted") {
+        notiBtn.classList.remove('text-zinc-400', 'hover:text-zinc-200', 'border-zinc-700/50', 'text-red-400', 'border-red-500/30', 'bg-red-950/20');
+        notiBtn.classList.add('text-emerald-400', 'border-emerald-500/30', 'bg-emerald-950/20');
+        if (icon) icon.setAttribute('data-lucide', 'bell');
+      } else if (Notification.permission === "denied") {
+        notiBtn.classList.remove('text-zinc-400', 'hover:text-zinc-200', 'border-zinc-700/50', 'text-emerald-400', 'border-emerald-500/30', 'bg-emerald-950/20');
+        notiBtn.classList.add('text-red-400', 'border-red-500/30', 'bg-red-950/20');
+        if (icon) icon.setAttribute('data-lucide', 'bell-off');
+      } else {
+        notiBtn.className = "p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 rounded-lg border border-zinc-700/50 transition-colors";
+        if (icon) icon.setAttribute('data-lucide', 'bell-off');
+      }
+      lucide.createIcons();
+    }
+
     //--- 타이머 제어 함수 ---
     function startTimer() {
       isRunning = true;
@@ -256,6 +312,11 @@
       updateTimerUI();
       startTimerInterval();
       hideToast();
+      
+      // 타이머 시작 시점에도 권한이 없다면 바탕화면 권한 조심스럽게 허용 권유
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission().then(updateNotiBtnUI);
+      }
     }
 
     // 강제 만료 또는 수동 정지
@@ -275,13 +336,16 @@
       saveState();
       updateTimerUI();
 
-      // 토스트 알림창 활성화하여 질문하기
+      // 토스트 및 시스템 알림창 활성화하여 질문하기
       if (forcedExpiry) {
+        const msg = "⌛ 2시간이 경과되었습니다!";
+        const prompt = "지난 2시간 동안 무엇을 하셨나요? 기록을 남겨보세요.";
         showToast({
-          message: "⌛ 2시간이 경과되었습니다!",
-          promptText: "지난 2시간 동안 무엇을 하셨나요? 기록을 남겨보세요.",
+          message: msg,
+          promptText: prompt,
           actionType: 'input'
         });
+        showSystemNotification(msg, prompt, 'input', prompt);
       } else {
         let durationStr = `${elapsedMinutes}분`;
         if (elapsedMinutes >= 60) {
@@ -290,11 +354,14 @@
           durationStr = mins > 0 ? `${hrs}시간 ${mins}분` : `${hrs}시간`;
         }
         
+        const msg = `⏱️ 타이머가 중지되었습니다. (${durationStr} 경과)`;
+        const prompt = `${durationStr} 동안 무엇을 하셨습니까?`;
         showToast({
-          message: `⏱️ 타이머가 중지되었습니다. (${durationStr} 경과)`,
-          promptText: `${durationStr} 동안 무엇을 하셨습니까?`,
+          message: msg,
+          promptText: prompt,
           actionType: 'input'
         });
+        showSystemNotification(msg, prompt, 'input', prompt);
       }
     }
 
@@ -597,6 +664,40 @@
 
     exportBtn.addEventListener('click', exportLogs);
     clearBtn.addEventListener('click', clearAllLogs);
+
+    // 알림 설정 버튼 클릭 이벤트 핸들러
+    notiBtn.addEventListener('click', () => {
+      if (!("Notification" in window)) {
+        showToast({
+          message: "이 브라우저는 데스크톱 바탕화면 알림을 지원하지 않습니듸.",
+          actionType: 'none'
+        });
+        setTimeout(hideToast, 2500);
+        return;
+      }
+
+      Notification.requestPermission().then(permission => {
+        updateNotiBtnUI();
+        if (permission === "granted") {
+          showToast({
+            message: "🔔 바탕화면 데스크톱 알림 기능이 활성화되었습니듸!",
+            actionType: 'none'
+          });
+          setTimeout(hideToast, 2000);
+          // 테스트용 데스크톱 실시간 즉시 알림 발송
+          new Notification("시간 관리 비서", {
+            body: "데스크톱 알림이 정상적으로 활성화되었습니듸!",
+            icon: 'https://cdn-icons-png.flaticon.com/512/2088/2088617.png'
+          });
+        } else if (permission === "denied") {
+          showToast({
+            message: "🔕 알림 권한이 차단되었습니듸. 브라우저 주소창 왼쪽 설정에서 알림을 직접 허용해 주셔야 합니듸.",
+            actionType: 'none'
+          });
+          setTimeout(hideToast, 4000);
+        }
+      });
+    });
 
   </script>
 </body>
